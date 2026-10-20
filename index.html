@@ -43,7 +43,6 @@
       .subtitle { margin: 8px 0 0; color: var(--muted); font-size: .95rem; }
       .save-state { color: var(--muted); font-size: .8rem; text-align: right; }
       .save-state.error { color: var(--red); }
-      .layout { display: grid; grid-template-columns: minmax(0, 1fr) 350px; align-items: start; gap: 18px; }
       .main-column, .side-column { display: grid; gap: 18px; min-width: 0; }
       .card { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(25,31,44,.95); box-shadow: 0 12px 32px #0002; }
       .card-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
@@ -72,7 +71,59 @@
       .draft-group-title { margin: 0 0 6px; color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
       .draft-slot { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 7px; margin-top: 6px; }
       .draft-slot span { color: var(--muted); font-size: .75rem; text-align: right; }
-      .draft-slot select { min-height: 36px; padding: 5px 8px; font-size: .82rem; }
+      .draft-pick {
+        display: flex;
+        width: 100%;
+        min-height: 40px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #191f2c;
+        color: var(--text);
+        font-size: .84rem;
+        text-align: left;
+      }
+      .draft-pick:hover { border-color: var(--blue); }
+      .draft-pick .empty { color: var(--muted); }
+      .draft-pick .remove { color: var(--muted); font-size: .72rem; }
+      .draft-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+      .primary-button, .secondary-button {
+        min-height: 44px;
+        padding: 9px 16px;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        font-weight: 800;
+      }
+      .primary-button { background: var(--blue); color: #07111c; }
+      .primary-button:hover { background: #81ccff; }
+      .secondary-button { border-color: var(--line); background: transparent; color: var(--text); }
+      .secondary-button:hover { border-color: var(--blue); }
+      .battle-layout { display: grid; grid-template-columns: minmax(0, 1fr) 350px; align-items: start; gap: 18px; }
+      .phase-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+      .hero-dialog {
+        width: min(520px, calc(100% - 24px));
+        max-height: min(80vh, 690px);
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid #455774;
+        border-radius: 16px;
+        background: var(--panel);
+        color: var(--text);
+        box-shadow: 0 24px 80px #0009;
+      }
+      .hero-dialog::backdrop { background: #05080dbb; backdrop-filter: blur(3px); }
+      .dialog-content { display: flex; max-height: min(80vh, 690px); flex-direction: column; padding: 18px; }
+      .dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+      .dialog-close { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--text); font-size: 1.2rem; }
+      .hero-search { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: #111824; color: var(--text); }
+      .hero-results { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 12px; overflow: auto; }
+      .hero-option { min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #111824; color: var(--text); text-align: left; }
+      .hero-option:hover, .hero-option:focus-visible { border-color: var(--blue); background: #202d40; }
+      .hero-empty { grid-column: 1 / -1; padding: 12px; color: var(--muted); text-align: center; }
+      .draft-status { margin: 12px 0 0; color: var(--muted); font-size: .82rem; }
       .roster { display: grid; gap: 7px; }
       .hero-row {
         display: grid;
@@ -109,9 +160,9 @@
       .reset-button:hover { border-color: var(--red); color: var(--red); }
       .footnote { margin: 0; color: var(--muted); font-size: .76rem; }
       .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+      [hidden] { display: none !important; }
       @media (max-width: 850px) {
-        .layout { grid-template-columns: minmax(0, 1fr); }
-        .side-column { grid-row: 1; }
+        .battle-layout { grid-template-columns: minmax(0, 1fr); }
         .recommendation { position: static; }
       }
       @media (max-width: 600px) {
@@ -120,6 +171,9 @@
         .save-state { max-width: 90px; }
         .card { padding: 14px; border-radius: 13px; }
         .setup-grid, .draft-grid { grid-template-columns: 1fr; }
+        .draft-actions { display: grid; }
+        .draft-actions button { width: 100%; }
+        .hero-results { grid-template-columns: 1fr; }
         .hero-row { grid-template-columns: minmax(72px, .75fr) minmax(0, 1.25fr); gap: 5px; padding: 7px 6px; }
         .hero-name, .hero-row input { grid-column: 1; }
         .hero-row .status-select, .hero-row select:not(.status-select) { grid-column: 2; }
@@ -142,93 +196,116 @@
         <div id="save-state" class="save-state" role="status" aria-live="polite">자동 저장 준비</div>
       </header>
 
-      <div class="layout">
-        <main class="main-column">
-          <section class="card" aria-labelledby="draft-heading">
-            <div class="card-heading">
-              <h2 id="draft-heading">밴픽 설정</h2>
-              <span class="hint">선택한 영웅은 전황 입력에 반영됩니다</span>
+      <main>
+        <section id="prep-screen" class="card" aria-labelledby="draft-heading">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">GAME PREPARATION</p>
+              <h2 id="draft-heading">게임 준비</h2>
             </div>
-            <div class="setup-grid">
-              <div>
-                <label class="field-label" for="map">전장</label>
-                <select id="map">
-                  <option value="">전장 선택 (선택 사항)</option>
-                  <option>거미 여왕의 무덤</option><option>공포의 정원</option><option>파멸의 탑</option>
-                  <option>불지옥 신단</option><option>브락시스 항전</option>
-                  <option>볼스카야 공장</option><option>저주받은 골짜기</option><option>용의 둥지</option>
-                  <option>영원의 전쟁터</option><option>하늘 사원</option><option>핵탄두 격전지</option>
-                  <option>알터랙 고개</option><option>하나무라 사원</option><option>블랙하트 항만</option>
-                </select>
+            <span class="hint">전장과 밴픽을 정리하세요</span>
+          </div>
+          <div class="setup-grid">
+            <div>
+              <label class="field-label" for="map">전장</label>
+              <select id="map">
+                <option value="">전장 선택</option>
+                <option>거미 여왕의 무덤</option><option>공포의 정원</option><option>파멸의 탑</option>
+                <option>불지옥 신단</option><option>브락시스 항전</option><option>볼스카야 공장</option>
+                <option>저주받은 골짜기</option><option>용의 둥지</option><option>영원의 전쟁터</option>
+                <option>하늘 사원</option><option>핵탄두 격전지</option><option>알터랙 고개</option>
+                <option>하나무라 사원</option><option>블랙하트 항만</option>
+              </select>
+            </div>
+            <fieldset style="padding:0;border:0;margin:0">
+              <legend class="field-label">우리 팀 밴픽 순서</legend>
+              <div class="choice-row">
+                <label><input type="radio" name="draft-order" value="first"> 선픽</label>
+                <label><input type="radio" name="draft-order" value="second"> 후픽</label>
               </div>
-              <fieldset style="padding:0;border:0;margin:0">
-                <legend class="field-label">우리 팀 밴픽 순서</legend>
-                <div class="choice-row">
-                  <label><input type="radio" name="draft-order" value="first"> 선픽</label>
-                  <label><input type="radio" name="draft-order" value="second"> 후픽</label>
-                  <span class="subtle">선택 사항</span>
+            </fieldset>
+          </div>
+          <div class="draft-grid" style="margin-top:18px">
+            <section class="team-box" aria-label="우리 팀 밴픽">
+              <div class="team-title"><span class="dot"></span>우리 팀</div>
+              <div class="draft-group"><p class="draft-group-title">밴</p><div id="our-bans"></div></div>
+              <div class="draft-group"><p class="draft-group-title">픽</p><div id="our-picks"></div></div>
+            </section>
+            <section class="team-box enemy" aria-label="상대 팀 밴픽">
+              <div class="team-title"><span class="dot"></span>상대 팀</div>
+              <div class="draft-group"><p class="draft-group-title">밴</p><div id="enemy-bans"></div></div>
+              <div class="draft-group"><p class="draft-group-title">픽</p><div id="enemy-picks"></div></div>
+            </section>
+          </div>
+          <p id="draft-status" class="draft-status" role="status" aria-live="polite"></p>
+          <div class="draft-actions">
+            <button id="start-match" class="primary-button" type="button">게임 중 전황 입력 →</button>
+          </div>
+        </section>
+
+        <section id="game-screen" class="battle-layout" aria-label="게임 중 전황 입력" hidden>
+          <div class="main-column">
+            <section class="card" aria-labelledby="battle-heading">
+              <div class="phase-heading">
+                <div>
+                  <p class="eyebrow">IN-GAME</p>
+                  <h2 id="battle-heading">게임 중 전황</h2>
                 </div>
-              </fieldset>
-            </div>
-            <div class="draft-grid" style="margin-top:14px">
-              <section class="team-box" aria-label="우리 팀 밴픽">
-                <div class="team-title"><span class="dot"></span>우리 팀</div>
-                <div class="draft-group"><p class="draft-group-title">밴</p><div id="our-bans"></div></div>
-                <div class="draft-group"><p class="draft-group-title">픽</p><div id="our-picks"></div></div>
-              </section>
-              <section class="team-box enemy" aria-label="상대 팀 밴픽">
-                <div class="team-title"><span class="dot"></span>상대 팀</div>
-                <div class="draft-group"><p class="draft-group-title">밴</p><div id="enemy-bans"></div></div>
-                <div class="draft-group"><p class="draft-group-title">픽</p><div id="enemy-picks"></div></div>
-              </section>
-            </div>
-          </section>
-
-          <section class="card" aria-labelledby="battle-heading">
-            <div class="card-heading">
-              <h2 id="battle-heading">게임 중 전황</h2>
-              <span class="hint">바뀔 때마다 자동 저장</span>
-            </div>
-            <div id="battle-rosters"></div>
-            <div class="level-controls">
-              <div>
-                <label class="field-label" for="level">우리 팀 레벨 상황</label>
-                <select id="level">
-                  <option value="unknown">모름</option><option value="ahead">우리 팀 우위</option>
-                  <option value="even">동레벨</option><option value="behind">우리 팀 열세</option>
-                </select>
+                <button id="back-to-prep" class="secondary-button" type="button">← 밴픽 수정</button>
               </div>
-              <div>
-                <label class="field-label" for="objective">오브젝트 상황</label>
-                <select id="objective">
-                  <option value="unknown">모름 / 판단 전</option><option value="soon">곧 생성</option>
-                  <option value="ours">우리 팀 오브젝트 진행 중</option><option value="contested">경합 중</option>
-                  <option value="enemy">상대 팀 오브젝트 진행 중</option><option value="secured">이번 오브젝트 확보</option>
-                </select>
+              <p id="match-summary" class="hint"></p>
+              <div id="battle-rosters"></div>
+              <div class="level-controls">
+                <div>
+                  <label class="field-label" for="level">우리 팀 레벨 상황</label>
+                  <select id="level">
+                    <option value="unknown">모름</option><option value="ahead">우리 팀 우위</option>
+                    <option value="even">동레벨</option><option value="behind">우리 팀 열세</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="field-label" for="objective">오브젝트 상황</label>
+                  <select id="objective">
+                    <option value="unknown">모름 / 판단 전</option><option value="soon">곧 생성</option>
+                    <option value="ours">우리 팀 오브젝트 진행 중</option><option value="contested">경합 중</option>
+                    <option value="enemy">상대 팀 오브젝트 진행 중</option><option value="secured">이번 오브젝트 확보</option>
+                  </select>
+                </div>
               </div>
-            </div>
-          </section>
-        </main>
-
-        <aside class="side-column">
-          <section class="card recommendation" aria-labelledby="recommend-heading">
-            <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
-            <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
-            <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
-            <p id="reason" class="reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
-            <p id="warning" class="warning" hidden></p>
-            <details>
-              <summary>상세 분석 보기</summary>
-              <ul id="analysis" class="analysis"></ul>
-            </details>
-          </section>
-          <section class="card">
-            <h2>사용 안내</h2>
-            <p class="footnote" style="margin-top:9px">추천은 생존 인원, 부활 시간, 레벨, 오브젝트 입력만 보는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
-            <button id="reset" class="reset-button" type="button" style="margin-top:15px">입력 초기화</button>
-          </section>
-        </aside>
+            </section>
+          </div>
+          <aside class="side-column">
+            <section class="card recommendation" aria-labelledby="recommend-heading">
+              <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
+              <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
+              <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
+              <p id="reason" class="reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
+              <p id="warning" class="warning" hidden></p>
+              <details>
+                <summary>상세 분석 보기</summary>
+                <ul id="analysis" class="analysis"></ul>
+              </details>
+            </section>
+            <section class="card">
+              <h2>사용 안내</h2>
+              <p class="footnote" style="margin-top:9px">추천은 생존 인원, 부활 시간, 레벨, 오브젝트 입력만 보는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
+              <button id="reset" class="reset-button" type="button" style="margin-top:15px">입력 초기화</button>
+            </section>
+          </aside>
+        </section>
+      </main>
       </div>
+      <dialog id="hero-dialog" class="hero-dialog" aria-labelledby="hero-dialog-title">
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <div><p class="eyebrow">HERO SELECT</p><h2 id="hero-dialog-title">영웅 선택</h2></div>
+          <button id="close-hero-dialog" class="dialog-close" type="button" aria-label="영웅 선택 닫기">×</button>
+        </div>
+        <label class="visually-hidden" for="hero-search">영웅 이름 검색</label>
+        <input id="hero-search" class="hero-search" type="search" autocomplete="off" placeholder="영웅 이름 검색">
+        <div id="hero-results" class="hero-results" role="listbox" aria-label="검색 결과"></div>
+      </div>
+      </dialog>
     </div>
 
     <script>
@@ -246,7 +323,7 @@
           "임페리우스","자가라","자리야","정예 타우렌 족장","정크랫","제이나","제라툴","줄","초","첸",
           "카시아","카라짐","케리건","켈타스","켈투자드","크로미","키히라","타이커스","태사다르",
           "트레이서","티리엘","티란데","폴스타트","프로비우스","피닉스","해머 상사","한조","호거",
-          "화이트메인","D.Va"
+          "화이트메인","잘아타스","D.Va"
         ].filter((hero, index, list) => list.indexOf(hero) === index).sort((a, b) => a.localeCompare(b, "ko"));
         const slots = {
           ourBans: { count: 3, label: "아군 밴" },
@@ -255,7 +332,7 @@
           enemyPicks: { count: 5, label: "상대 픽" }
         };
         const defaultState = () => ({
-          map: "", draftOrder: "", draft: Object.fromEntries(
+          phase: "prep", map: "", draftOrder: "", draft: Object.fromEntries(
             Object.entries(slots).map(([key, value]) => [key, Array(value.count).fill("")])
           ),
           battle: Object.fromEntries(["ours", "enemy"].map((team) => [
@@ -264,11 +341,15 @@
           level: "unknown", objective: "unknown"
         });
         const saveState = document.querySelector("#save-state");
+        const heroDialog = document.querySelector("#hero-dialog");
+        const heroSearch = document.querySelector("#hero-search");
+        let activeSlot = null;
         let state = defaultState();
 
         function normalizeState(value) {
           const fresh = defaultState();
           if (!value || typeof value !== "object") return fresh;
+          if (value.phase === "game") fresh.phase = "game";
           if (typeof value.map === "string") fresh.map = value.map;
           if (value.draftOrder === "first" || value.draftOrder === "second") fresh.draftOrder = value.draftOrder;
           if (value.draft && typeof value.draft === "object") {
@@ -336,35 +417,53 @@
           return used;
         }
 
-        function heroOptions(selected, used) {
-          const options = ['<option value="">영웅 선택</option>'];
-          for (const hero of heroList) {
-            if (!used.has(hero) || hero === selected) {
-              options.push(`<option value="${hero}"${hero === selected ? " selected" : ""}>${hero}</option>`);
-            }
-          }
-          return options.join("");
-        }
-
         function renderDraft() {
           for (const [key, config] of Object.entries(slots)) {
             const container = document.querySelector(`#${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`);
             container.innerHTML = state.draft[key].map((hero, index) => {
-              const used = allUsed(key, index);
-              return `<label class="draft-slot"><span>${index + 1}</span><select data-draft="${key}" data-index="${index}" aria-label="${config.label} ${index + 1}">${heroOptions(hero, used)}</select></label>`;
+              return `<div class="draft-slot"><span>${index + 1}</span><button class="draft-pick" type="button" data-draft="${key}" data-index="${index}" aria-label="${config.label} ${index + 1}: ${hero || "영웅 선택"}">${hero ? `<span>${hero}</span><span class="remove">변경</span>` : '<span class="empty">영웅 선택</span><span aria-hidden="true">＋</span>'}</button></div>`;
             }).join("");
           }
+          document.querySelector("#draft-status").textContent = draftProgress();
           document.querySelectorAll("[data-draft]").forEach((select) => {
-            select.addEventListener("change", () => {
-              const key = select.dataset.draft;
-              const index = Number(select.dataset.index);
-              state.draft[key][index] = select.value;
-              renderDraft();
-              renderRosters();
-              updateRecommendation();
-              persist();
+            select.addEventListener("click", () => {
+              activeSlot = { key: select.dataset.draft, index: Number(select.dataset.index) };
+              document.querySelector("#hero-dialog-title").textContent =
+                `${slots[activeSlot.key].label} ${activeSlot.index + 1} 선택`;
+              heroSearch.value = "";
+              renderHeroResults();
+              heroDialog.showModal();
+              heroSearch.focus();
             });
           });
+        }
+
+        function draftProgress() {
+          const total = Object.values(slots).reduce((sum, group) => sum + group.count, 0);
+          const chosen = Object.values(state.draft).flat().filter(Boolean).length;
+          const mapText = state.map || "전장 미선택";
+          const orderText = state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "순서 미선택";
+          return `${mapText} · ${orderText} · 밴픽 ${chosen}/${total} 선택`;
+        }
+
+        function renderHeroResults() {
+          if (!activeSlot) return;
+          const used = allUsed(activeSlot.key, activeSlot.index);
+          const query = heroSearch.value.trim().toLocaleLowerCase("ko").replace(/\s+/g, "");
+          const current = state.draft[activeSlot.key][activeSlot.index];
+          const available = heroList.filter((hero) =>
+            !used.has(hero) && hero !== current && hero.toLocaleLowerCase("ko").replace(/\s+/g, "").includes(query)
+          );
+          const results = document.querySelector("#hero-results");
+          results.innerHTML = available.length
+            ? available.map((hero) => `<button class="hero-option" type="button" role="option" aria-selected="false" data-hero="${hero}">${hero}</button>`).join("")
+            : '<p class="hero-empty">검색 결과가 없거나 이미 다른 밴·픽에서 선택한 영웅입니다.</p>';
+          if (current) {
+            results.insertAdjacentHTML("afterbegin", `<button class="hero-option" type="button" role="option" aria-selected="true" data-hero="${current}">${current} · 현재 선택</button>`);
+            if (!query) {
+              results.insertAdjacentHTML("beforeend", '<button class="hero-option" type="button" role="option" aria-selected="false" data-hero="">선택 해제</button>');
+            }
+          }
         }
 
         function pickedHero(team, index) {
@@ -519,6 +618,10 @@
           if (order) order.checked = true;
           document.querySelector("#level").value = state.level;
           document.querySelector("#objective").value = state.objective;
+          document.querySelector("#prep-screen").hidden = state.phase !== "prep";
+          document.querySelector("#game-screen").hidden = state.phase !== "game";
+          document.querySelector("#match-summary").textContent =
+            `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "밴픽 순서 미선택"}`;
           renderDraft();
           renderRosters();
           updateRecommendation();
@@ -526,11 +629,44 @@
 
         loadState();
         render();
-        document.querySelector("#map").addEventListener("change", (event) => { state.map = event.target.value; persist(); });
+        document.querySelector("#map").addEventListener("change", (event) => {
+          state.map = event.target.value;
+          document.querySelector("#draft-status").textContent = draftProgress();
+          document.querySelector("#match-summary").textContent =
+            `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "밴픽 순서 미선택"}`;
+          persist();
+        });
         document.querySelectorAll('input[name="draft-order"]').forEach((radio) => radio.addEventListener("change", () => {
           state.draftOrder = radio.value;
+          document.querySelector("#draft-status").textContent = draftProgress();
+          document.querySelector("#match-summary").textContent =
+            `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : "후픽"}`;
           persist();
         }));
+        document.querySelector("#hero-results").addEventListener("click", (event) => {
+          const option = event.target.closest("[data-hero]");
+          if (!option || !activeSlot) return;
+          state.draft[activeSlot.key][activeSlot.index] = option.dataset.hero;
+          activeSlot = null;
+          heroDialog.close();
+          render();
+          persist();
+        });
+        heroSearch.addEventListener("input", renderHeroResults);
+        document.querySelector("#close-hero-dialog").addEventListener("click", () => heroDialog.close());
+        heroDialog.addEventListener("close", () => { activeSlot = null; });
+        document.querySelector("#start-match").addEventListener("click", () => {
+          state.phase = "game";
+          render();
+          persist();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        document.querySelector("#back-to-prep").addEventListener("click", () => {
+          state.phase = "prep";
+          render();
+          persist();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
         for (const id of ["level", "objective"]) {
           document.querySelector(`#${id}`).addEventListener("change", (event) => {
             state[id] = event.target.value;
@@ -541,6 +677,7 @@
         document.querySelector("#reset").addEventListener("click", () => {
           if (!window.confirm("밴픽과 전황 입력을 모두 초기화할까요?")) return;
           state = defaultState();
+          if (heroDialog.open) heroDialog.close();
           render();
           persist();
         });
