@@ -3,725 +3,548 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f2efe6">
-    <meta name="description" content="좋은 재료와 느긋한 마음으로 우리 동네의 맥주를 빚는 범버꿍 브루어리." id="page-description">
-    <title>범버꿍 브루어리 — 오늘도, 꿍하게</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Gowun+Dodum&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#10151f">
+    <meta name="description" content="히어로즈 오브 더 스톰 경기 중 상황을 빠르게 입력하고 다음 행동을 확인하는 전략 코치 MVP.">
+    <title>히오스 전략 코치</title>
     <style>
       :root {
-        color-scheme: light;
-        --paper: #f2efe6;
-        --ink: #202a22;
-        --muted: #72776c;
-        --green: #284936;
-        --lime: #d4e75a;
-        --orange: #f17d42;
-        --line: rgba(32, 42, 34, .17);
-        --serif: "Gowun Dodum", sans-serif;
-        --sans: "DM Sans", "Gowun Dodum", sans-serif;
-        --display: "Space Grotesk", "Gowun Dodum", sans-serif;
+        color-scheme: dark;
+        --bg: #10151f;
+        --panel: #191f2c;
+        --panel-2: #202838;
+        --line: #303b4e;
+        --text: #f2f5fb;
+        --muted: #a1adc0;
+        --blue: #54b7ff;
+        --red: #ff777f;
+        --gold: #ffd166;
+        --green: #7bddaa;
+        --radius: 16px;
       }
-
       * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
       body {
         margin: 0;
-        background: var(--paper);
-        color: var(--ink);
-        font-family: var(--sans);
-        -webkit-font-smoothing: antialiased;
+        min-width: 320px;
+        background: radial-gradient(ellipse at 50% -15%, #263750 0, var(--bg) 55%);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.5;
       }
-      a { color: inherit; text-decoration: none; }
-      button, input, select, textarea { font: inherit; }
-      button, a { -webkit-tap-highlight-color: transparent; }
-      .wrap { width: min(1240px, calc(100% - 64px)); margin: 0 auto; }
-
-      .topbar {
-        position: absolute;
-        z-index: 5;
-        inset: 0 0 auto;
-        color: #fffdf5;
+      button, input, select { font: inherit; }
+      button, select, input[type="radio"], input[type="checkbox"] { cursor: pointer; }
+      button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible {
+        outline: 3px solid var(--gold);
+        outline-offset: 2px;
       }
-      .nav {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        min-height: 88px;
-        border-bottom: 1px solid rgba(255,255,255,.28);
-      }
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 700;
-        letter-spacing: -.045em;
-        font-size: 20px;
-      }
-      .brand-mark { width: 31px; height: 31px; }
-      .brand small {
-        display: block;
-        margin-top: 2px;
-        font-family: var(--display);
-        font-size: 10px;
-        font-weight: 500;
-        letter-spacing: .16em;
-        opacity: .72;
-      }
-      .nav-links { display: flex; align-items: center; gap: 38px; font-size: 15px; }
-      .nav-links a:not(.nav-cta) { opacity: .85; transition: opacity .2s; }
-      .nav-links a:not(.nav-cta):hover { opacity: 1; }
-      .nav-cta {
-        padding: 12px 18px;
-        border: 1px solid rgba(255,255,255,.6);
-        border-radius: 99px;
-        transition: background .2s, color .2s;
-      }
-      .nav-cta:hover { color: var(--ink); background: var(--paper); }
-      .language-toggle {
-        padding: 9px 12px;
-        border: 1px solid rgba(255,255,255,.45);
-        border-radius: 99px;
-        background: transparent;
-        color: inherit;
-        font-size: 12px;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .language-toggle:hover { background: rgba(255,255,255,.14); }
-      .menu-toggle {
-        display: none;
-        color: white;
-        border: 0;
-        background: none;
-        font-size: 25px;
-        cursor: pointer;
-      }
-
-      .hero {
-        position: relative;
-        display: grid;
-        min-height: min(790px, 100svh);
-        min-height: min(790px, 100vh);
-        align-items: end;
-        overflow: hidden;
-        isolation: isolate;
-        color: #fffdf5;
-        background: #3d382b url("https://images.unsplash.com/photo-1513558161293-cdaf765edfd7?auto=format&fit=crop&w=2200&q=88") center 54% / cover no-repeat;
-      }
-      .hero::before {
-        position: absolute;
-        z-index: -1;
-        inset: 0;
-        content: "";
-        background: linear-gradient(90deg, rgba(20,26,21,.77) 0%, rgba(20,26,21,.48) 45%, rgba(20,26,21,.08) 100%),
-                    linear-gradient(0deg, rgba(20,26,21,.5), transparent 52%);
-      }
-      .hero-content { padding: 190px 0 76px; }
-      .eyebrow {
-        display: flex;
-        align-items: center;
-        gap: 11px;
-        margin: 0 0 20px;
-        font-family: var(--display);
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: .2em;
-        text-transform: uppercase;
-      }
-      .eyebrow::before { width: 29px; height: 1px; background: currentColor; content: ""; }
-      h1, h2, h3, p { margin-top: 0; }
-      .hero h1 {
-        max-width: 760px;
-        margin-bottom: 24px;
-        font-family: var(--serif);
-        font-size: clamp(54px, 8.2vw, 112px);
-        font-weight: 400;
-        letter-spacing: -.075em;
-        line-height: 1.17;
-      }
-      .hero h1 span { color: var(--lime); }
-      .hero-copy { max-width: 450px; margin-bottom: 32px; color: rgba(255,253,245,.9); font-size: 17px; line-height: 1.9; }
-      .button {
-        display: inline-flex;
-        min-height: 52px;
-        align-items: center;
-        justify-content: center;
-        gap: 18px;
-        padding: 0 21px;
-        border: 1px solid transparent;
-        border-radius: 99px;
-        background: var(--lime);
-        color: var(--ink);
-        font-size: 15px;
-        font-weight: 700;
-        transition: transform .2s, background .2s;
-      }
-      .button:hover { transform: translateY(-2px); background: #e2f17b; }
-      .button .arrow { font-size: 18px; line-height: 1; }
-      .hero-bottom {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        margin-top: 85px;
-        padding-top: 17px;
-        border-top: 1px solid rgba(255,255,255,.35);
-        color: rgba(255,253,245,.76);
-        font-family: var(--display);
-        font-size: 11px;
-        letter-spacing: .16em;
-      }
-      .hero-bottom span:last-child { text-align: right; }
-
-      .intro { padding: 140px 0 132px; }
-      .intro-grid { display: grid; grid-template-columns: .85fr 1.15fr; gap: 9%; align-items: start; }
-      .section-kicker {
-        margin-bottom: 18px;
-        color: var(--muted);
-        font-family: var(--display);
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: .16em;
-        text-transform: uppercase;
-      }
-      .intro h2 {
-        margin-bottom: 0;
-        font-family: var(--serif);
-        font-size: clamp(36px, 4vw, 54px);
-        font-weight: 400;
-        letter-spacing: -.075em;
-        line-height: 1.35;
-      }
-      .intro h2 em { color: #66803d; font-style: normal; }
-      .intro-copy { max-width: 570px; padding-top: 12px; color: #50584e; font-size: 17px; line-height: 1.9; }
-      .intro-copy p { margin-bottom: 24px; }
-      .text-link { display: inline-flex; align-items: center; gap: 11px; color: var(--green); font-size: 15px; font-weight: 700; }
-      .text-link span { font-size: 18px; transition: transform .2s; }
-      .text-link:hover span { transform: translateX(4px); }
-
-      .beer-section { padding: 110px 0 124px; background: #e7e5d9; }
-      .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 43px; }
-      .section-heading h2 {
-        margin-bottom: 0;
-        font-family: var(--serif);
-        font-size: clamp(38px, 5vw, 62px);
-        font-weight: 400;
-        letter-spacing: -.07em;
-      }
-      .section-heading > p { max-width: 330px; margin-bottom: 5px; color: #5f665b; font-size: 15px; line-height: 1.8; }
-      .beer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 17px; }
-      .beer-card { min-width: 0; }
-      .beer-art {
-        position: relative;
-        display: grid;
-        height: 330px;
-        place-items: center;
-        overflow: hidden;
-        background: #d4d4b9;
-        background-position: center;
-        background-size: cover;
-      }
-      .beer-card:nth-child(2) .beer-art { background: #e7b765; }
-      .beer-card:nth-child(3) .beer-art { background: #d08a69; }
-      .beer-card:nth-child(1) .beer-art {
-        background-image: linear-gradient(rgba(32,42,34,.3), rgba(32,42,34,.48)), url("https://images.unsplash.com/photo-1584225064785-c62a8b43d148?auto=format&fit=crop&w=1200&q=85");
-      }
-      .beer-card:nth-child(2) .beer-art {
-        background-image: linear-gradient(rgba(32,42,34,.3), rgba(32,42,34,.48)), url("https://images.unsplash.com/photo-1566633806327-68e152aaf26d?auto=format&fit=crop&w=1200&q=85");
-      }
-      .beer-card:nth-child(3) .beer-art {
-        background-image: linear-gradient(rgba(32,42,34,.3), rgba(32,42,34,.48)), url("https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&w=1200&q=85");
-      }
-      .beer-art::before, .beer-art::after {
-        position: absolute;
-        width: 290px;
-        height: 290px;
-        border: 1px solid rgba(32,42,34,.16);
-        border-radius: 50%;
-        content: "";
-      }
-      .beer-art::after { width: 220px; height: 220px; }
-      .can {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        width: 128px;
-        height: 226px;
-        flex-direction: column;
-        align-items: center;
-        padding: 12px 10px;
-        border: 1px solid rgba(0,0,0,.18);
-        border-radius: 15px 15px 17px 17px;
-        background: #ecead7;
-        box-shadow: 18px 20px 34px rgba(35,34,24,.22), inset 7px 0 12px rgba(255,255,255,.45);
-        transform: rotate(-7deg);
-        transition: transform .35s;
-      }
-      .beer-card:hover .can { transform: rotate(0) translateY(-7px); }
-      .can::before { width: 47px; height: 7px; border: 1px solid rgba(0,0,0,.24); border-radius: 50%; background: #b8b8a7; content: ""; }
-      .can-brand { margin-top: 42px; font-family: var(--serif); font-size: 14px; font-weight: 700; letter-spacing: -.08em; }
-      .can-name { margin-top: 8px; font-family: var(--display); font-size: 25px; font-weight: 700; letter-spacing: -.08em; }
-      .can-style { margin-top: 5px; font-family: var(--display); font-size: 7px; letter-spacing: .16em; }
-      .can-abv { position: absolute; right: 12px; bottom: 13px; font-family: var(--display); font-size: 8px; }
-      .beer-card:nth-child(2) .can { background: #f6d67e; }
-      .beer-card:nth-child(2) .can-name { color: #a34c23; }
-      .beer-card:nth-child(3) .can { background: #274a3a; color: #f4efd9; }
-      .beer-card:nth-child(3) .can-name { color: #d2e65d; }
-      .beer-index {
-        position: absolute;
-        z-index: 2;
-        top: 18px;
-        left: 18px;
-        color: #fffdf5;
-        font-family: var(--display);
-        font-size: 11px;
-        letter-spacing: .14em;
-        text-shadow: 0 1px 8px rgba(0,0,0,.55);
-      }
-      .beer-info { display: flex; justify-content: space-between; gap: 15px; padding: 19px 1px 0; }
-      .beer-info h3 { margin-bottom: 7px; font-family: var(--serif); font-size: 21px; font-weight: 400; letter-spacing: -.06em; }
-      .beer-info p { margin-bottom: 0; color: #5f665b; font-size: 14px; line-height: 1.7; }
-      .beer-abv { flex: 0 0 auto; padding-top: 3px; font-family: var(--display); font-size: 13px; }
-      .beer-note { margin-top: 39px; color: #5f665b; font-size: 13px; }
-
-      .manifesto { position: relative; overflow: hidden; padding: 126px 0 135px; background: var(--green); color: #f7f3e8; }
-      .manifesto::after {
-        position: absolute;
-        right: -130px;
-        bottom: -420px;
-        width: 690px;
-        height: 690px;
-        border: 1px solid rgba(255,255,255,.14);
-        border-radius: 50%;
-        box-shadow: 0 0 0 70px rgba(255,255,255,.025), 0 0 0 140px rgba(255,255,255,.025);
-        content: "";
-        pointer-events: none;
-      }
-      .manifesto-inner { position: relative; z-index: 1; display: grid; grid-template-columns: .55fr 1.45fr; gap: 8%; }
-      .manifesto .section-kicker { color: rgba(247,243,232,.6); }
-      .manifesto h2 { max-width: 750px; margin-bottom: 34px; font-family: var(--serif); font-size: clamp(42px, 6vw, 78px); font-weight: 400; letter-spacing: -.08em; line-height: 1.3; }
-      .manifesto h2 span { color: var(--lime); }
-      .manifesto-copy { max-width: 480px; color: rgba(247,243,232,.82); font-size: 16px; line-height: 1.9; }
-      .manifesto-copy p { margin-bottom: 0; }
-
-      .contact { padding: 126px 0 130px; }
-      .contact-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 10%; }
-      .contact h2 { max-width: 470px; margin-bottom: 22px; font-family: var(--serif); font-size: clamp(42px, 5vw, 64px); font-weight: 400; letter-spacing: -.08em; line-height: 1.25; }
-      .contact-intro { max-width: 390px; margin-bottom: 36px; color: #5f665b; font-size: 16px; line-height: 1.9; }
-      .contact-email { display: inline-flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--ink); padding-bottom: 7px; font-family: var(--display); font-size: 17px; }
-      .contact-email:hover { color: var(--green); }
-      .contact-form { display: grid; grid-template-columns: 1fr 1fr; gap: 21px 18px; }
-      .field { display: flex; flex-direction: column; gap: 9px; }
-      .field.full { grid-column: 1 / -1; }
-      .field label { font-size: 14px; font-weight: 700; }
-      .field input, .field select, .field textarea {
+      .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 56px; }
+      header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+      .eyebrow { margin: 0 0 4px; color: var(--blue); font-size: .76rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.35rem); line-height: 1.15; letter-spacing: -.04em; }
+      .subtitle { margin: 8px 0 0; color: var(--muted); font-size: .95rem; }
+      .save-state { color: var(--muted); font-size: .8rem; text-align: right; }
+      .save-state.error { color: var(--red); }
+      .layout { display: grid; grid-template-columns: minmax(0, 1fr) 350px; align-items: start; gap: 18px; }
+      .main-column, .side-column { display: grid; gap: 18px; min-width: 0; }
+      .card { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(25,31,44,.95); box-shadow: 0 12px 32px #0002; }
+      .card-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+      h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
+      h3 { margin: 0; font-size: .98rem; }
+      .hint, .subtle { color: var(--muted); font-size: .8rem; }
+      .field-label { display: block; margin-bottom: 6px; color: var(--muted); font-size: .79rem; font-weight: 700; }
+      select, input[type="number"] {
         width: 100%;
-        border: 0;
-        border-bottom: 1px solid var(--line);
-        border-radius: 0;
-        outline: none;
-        background: transparent;
-        color: var(--ink);
-        font-size: 15px;
+        min-height: 42px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: #111824;
+        color: var(--text);
       }
-      .field input, .field select { height: 40px; }
-      .field textarea { min-height: 96px; padding: 12px 0; resize: vertical; }
-      .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--green); }
-      .field input::placeholder, .field textarea::placeholder { color: #9a9c91; }
-      .form-bottom { display: flex; grid-column: 1 / -1; align-items: center; justify-content: space-between; gap: 18px; margin-top: 6px; }
-      .form-help { max-width: 300px; margin: 0; color: #5f665b; font-size: 12px; line-height: 1.7; }
-      .form-button { border: 0; cursor: pointer; }
-      .form-status { grid-column: 1 / -1; min-height: 19px; margin: 0; color: var(--green); font-size: 14px; }
-
-      footer { padding: 28px 0; border-top: 1px solid var(--line); }
-      .footer-main { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-      .footer-brand { font-family: var(--serif); font-size: 15px; font-weight: 700; }
-      .footer-copy, .footer-note { margin: 0; color: #5f665b; font-size: 12px; line-height: 1.8; }
-      .footer-note { text-align: right; }
-
-      @media (max-width: 760px) {
-        .wrap { width: min(100% - 40px, 560px); }
-        .nav { min-height: 72px; }
-        .brand { font-size: 17px; }
-        .brand-mark { width: 27px; height: 27px; }
-        .menu-toggle { display: block; }
-        .nav-links {
-          position: absolute;
-          top: 72px;
-          right: 20px;
-          left: 20px;
-          display: none;
-          align-items: stretch;
-          gap: 0;
-          padding: 12px 19px;
-          border: 1px solid rgba(255,255,255,.2);
-          background: rgba(32,42,34,.97);
-        }
-        .nav-links.is-open { display: flex; flex-direction: column; }
-        .nav-links a { padding: 13px 0; }
-        .nav-links .nav-cta { margin: 8px 0 5px; padding: 12px 15px; text-align: center; }
-        .nav-links .language-toggle { align-self: flex-start; margin: 8px 0; }
-        .hero { min-height: 720px; min-height: 90svh; background-position: 57% center; }
-        .hero::before { background: linear-gradient(90deg, rgba(20,26,21,.7), rgba(20,26,21,.16)), linear-gradient(0deg, rgba(20,26,21,.55), transparent 70%); }
-        .hero-content { padding: 170px 0 35px; }
-        .hero h1 { font-size: clamp(52px, 14vw, 82px); }
-        .hero-copy { max-width: 360px; font-size: 16px; }
-        .hero-bottom { margin-top: 67px; font-size: 10px; }
-        .intro { padding: 90px 0 87px; }
-        .intro-grid, .manifesto-inner, .contact-grid { grid-template-columns: 1fr; gap: 30px; }
-        .intro h2 { font-size: 40px; }
-        .intro-copy { padding-top: 0; }
-        .beer-section { padding: 85px 0 88px; }
-        .section-heading { align-items: start; flex-direction: column; gap: 14px; margin-bottom: 31px; }
-        .section-heading h2 { font-size: 44px; }
-        .beer-grid { grid-template-columns: 1fr; gap: 32px; }
-        .beer-art { height: 330px; }
-        .beer-info { padding-top: 14px; }
-        .beer-note { margin-top: 30px; line-height: 1.7; }
-        .manifesto { padding: 88px 0 95px; }
-        .manifesto-inner { gap: 21px; }
-        .manifesto h2 { font-size: 47px; }
-        .contact { padding: 88px 0 91px; }
-        .contact-grid { gap: 43px; }
-        .contact h2 { font-size: 48px; }
-        .footer-main { align-items: flex-start; flex-direction: column; gap: 12px; }
-        .footer-note { text-align: left; }
+      .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .choice-row { display: flex; min-height: 42px; align-items: center; gap: 14px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; }
+      .choice-row label, .objective-options label { display: inline-flex; align-items: center; gap: 7px; font-size: .88rem; }
+      .draft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .team-box { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #111824; }
+      .team-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: .92rem; font-weight: 800; }
+      .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--blue); }
+      .enemy .dot { background: var(--red); }
+      .draft-group + .draft-group { margin-top: 12px; }
+      .draft-group-title { margin: 0 0 6px; color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+      .draft-slot { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 7px; margin-top: 6px; }
+      .draft-slot span { color: var(--muted); font-size: .75rem; text-align: right; }
+      .draft-slot select { min-height: 36px; padding: 5px 8px; font-size: .82rem; }
+      .roster { display: grid; gap: 7px; }
+      .hero-row {
+        display: grid;
+        grid-template-columns: minmax(82px, 1fr) 82px 90px 92px;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #111824;
       }
-      @media (max-width: 420px) {
-        .contact-form { grid-template-columns: 1fr; }
-        .field.full, .form-bottom, .form-status { grid-column: 1; }
-        .form-bottom { align-items: flex-start; flex-direction: column; }
-        .hero-bottom span:last-child { max-width: 130px; }
+      .hero-name { overflow: hidden; font-size: .82rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+      .hero-name .empty { color: #778399; font-weight: 500; }
+      .hero-row select, .hero-row input { min-height: 36px; padding: 5px 7px; font-size: .76rem; }
+      .hero-row input:disabled { opacity: .4; cursor: not-allowed; }
+      .status-select.alive { border-color: #386b55; }
+      .status-select.dead { border-color: #754249; color: #ffb0b5; }
+      .battle-team + .battle-team { margin-top: 16px; }
+      .team-title .team-count { margin-left: auto; color: var(--muted); font-size: .77rem; font-weight: 600; }
+      .level-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+      .objective-options { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+      .objective-options label { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; }
+      .recommendation { position: sticky; top: 16px; border-color: #455774; background: linear-gradient(145deg, #202d40, #191f2c 72%); }
+      .recommendation .card-heading { margin-bottom: 11px; }
+      .recommendation-label { color: var(--gold); font-size: .76rem; font-weight: 800; letter-spacing: .1em; }
+      .action { margin: 0; font-size: clamp(1.45rem, 3vw, 2.1rem); line-height: 1.2; letter-spacing: -.04em; }
+      .reason { margin: 12px 0 0; color: #d4dceb; font-size: .91rem; }
+      .warning { margin: 12px 0 0; padding: 9px 11px; border-left: 3px solid var(--gold); border-radius: 5px; background: #ffd16612; color: #ffe2a0; font-size: .82rem; }
+      details { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+      summary { color: #c8d4e6; font-size: .85rem; font-weight: 700; cursor: pointer; }
+      .analysis { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: .82rem; }
+      .analysis li + li { margin-top: 6px; }
+      .reset-button { width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--muted); font-weight: 700; }
+      .reset-button:hover { border-color: var(--red); color: var(--red); }
+      .footnote { margin: 0; color: var(--muted); font-size: .76rem; }
+      .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+      @media (max-width: 850px) {
+        .layout { grid-template-columns: minmax(0, 1fr); }
+        .side-column { grid-row: 1; }
+        .recommendation { position: static; }
       }
-      @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+      @media (max-width: 600px) {
+        .shell { width: min(100% - 20px, 520px); padding-top: 18px; }
+        header { align-items: flex-start; margin-bottom: 16px; }
+        .save-state { max-width: 90px; }
+        .card { padding: 14px; border-radius: 13px; }
+        .setup-grid, .draft-grid { grid-template-columns: 1fr; }
+        .hero-row { grid-template-columns: minmax(72px, .75fr) minmax(0, 1.25fr); gap: 5px; padding: 7px 6px; }
+        .hero-name, .hero-row input { grid-column: 1; }
+        .hero-row .status-select, .hero-row select:not(.status-select) { grid-column: 2; }
+        .hero-row select, .hero-row input { padding: 4px; font-size: .7rem; }
+        .hero-name { font-size: .75rem; }
+        .objective-options { gap: 7px; }
+        .objective-options label { padding: 7px; font-size: .78rem; }
       }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
     </style>
   </head>
   <body>
-    <header class="topbar">
-      <nav class="nav wrap" aria-label="주요 메뉴" data-i18n-aria="navLabel">
-        <a class="brand" href="#home" aria-label="범버꿍 브루어리 홈" data-i18n-aria="brandLabel">
-          <svg class="brand-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-            <path d="M20 3.5 34.3 11.8v16.4L20 36.5 5.7 28.2V11.8L20 3.5Z" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M20 11c-4.5 4.4-6.2 8.1-5.1 11.2 1 2.8 3.4 3.4 5.1 1.2 1.7 2.2 4.1 1.6 5.1-1.2C26.2 19.1 24.5 15.4 20 11Z" fill="#D4E75A"/>
-            <path d="M20 25v6" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-          <span><span data-i18n="brandName">범버꿍</span><small data-i18n="brandEnglish">BUMBEOKKOONG BREWERY</small></span>
-        </a>
-        <button class="menu-toggle" type="button" aria-label="메뉴 열기" data-i18n-aria="menuOpen" aria-expanded="false" aria-controls="nav-links">☰</button>
-        <div class="nav-links" id="nav-links">
-          <a href="#story" data-i18n="navStory">우리 이야기</a>
-          <a href="#beer" data-i18n="navBeer">우리 맥주</a>
-          <a href="#mind" data-i18n="navMind">양조 철학</a>
-          <a class="nav-cta" href="#contact"><span data-i18n="navContact">비즈니스 문의</span> <span aria-hidden="true">↗</span></a>
-          <button class="language-toggle" type="button" aria-label="Switch to English" data-i18n-aria="languageToggleLabel">EN</button>
-        </div>
-      </nav>
-    </header>
-
-    <main>
-      <section class="hero" id="home">
-        <div class="wrap">
-          <div class="hero-content">
-            <p class="eyebrow" data-i18n="heroEyebrow">Small batch, big heart</p>
-            <h1><span data-i18n="heroLineOne">오늘도,</span><br><span data-i18n="heroLineTwo">꿍하게.</span></h1>
-            <p class="hero-copy" data-i18n="heroCopy">잘 익은 하루의 끝에 생각나는 맥주.<br>좋은 재료와 느긋한 마음으로 우리 동네의 한 잔을 빚습니다.</p>
-            <a class="button" href="#beer"><span data-i18n="heroButton">우리 맥주 만나보기</span> <span class="arrow" aria-hidden="true">↘</span></a>
-            <div class="hero-bottom">
-              <span>BREWED SLOWLY · SHARED HAPPILY</span>
-              <span data-i18n="heroFoot">우리 동네 작은 양조장, 범버꿍</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="intro wrap" id="story">
-        <div class="intro-grid">
-          <div>
-            <p class="section-kicker" data-i18n="storyKicker">A little introduction</p>
-            <h2 data-i18n="storyTitle">맥주 한 잔에<br>동네의 <em>기분</em>을 담아요.</h2>
-          </div>
-          <div class="intro-copy">
-            <p data-i18n="storyCopyOne">범버꿍은 매일 마셔도 질리지 않는 맥주를 고민하는 작은 브루어리예요. 한 모금은 산뜻하게, 다음 한 모금은 더 편안하게. 누군가의 식탁과 친구들의 긴 수다에 자연스럽게 놓이는 맥주를 만들어요.</p>
-            <p data-i18n="storyCopyTwo">유행을 쫓기보다 좋은 재료의 맛을 살리고, 한 배치 한 배치 정성껏 양조합니다. 오늘의 기분에 꼭 맞는 한 잔을 함께 찾아봐요.</p>
-            <a class="text-link" href="#mind"><span data-i18n="storyLink">범버꿍이 맥주 빚는 법</span> <span aria-hidden="true">→</span></a>
-          </div>
-        </div>
-      </section>
-
-      <section class="beer-section" id="beer">
-        <div class="wrap">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker" data-i18n="beerKicker">On tap at bumbeokkoong</p>
-              <h2 data-i18n="beerTitle">오늘의 꿍-픽</h2>
-            </div>
-            <p data-i18n="beerIntro">첫 모금부터 마지막 한 방울까지,<br>각기 다른 매력으로 채운 세 가지 한 잔.</p>
-          </div>
-          <div class="beer-grid">
-            <article class="beer-card">
-              <div class="beer-art">
-                <span class="beer-index">01 / EASY GOING</span>
-                <div class="can" aria-label="꿍 라거 맥주 캔 일러스트" data-i18n-aria="lagerCan">
-                  <span class="can-brand" data-i18n="brandName">범버꿍</span><span class="can-name" data-i18n="lagerCanName">꿍 Lager</span><span class="can-style">CRISP &amp; CLEAN</span><span class="can-abv">ABV 4.5%</span>
-                </div>
-              </div>
-              <div class="beer-info">
-                <div><h3 data-i18n="lagerName">꿍 라거</h3><p data-i18n="lagerCopy">산뜻한 첫인상, 깔끔한 끝맛의 데일리 라거</p></div><span class="beer-abv">4.5% ABV</span>
-              </div>
-            </article>
-            <article class="beer-card">
-              <div class="beer-art">
-                <span class="beer-index">02 / SUNNY SIDE</span>
-                <div class="can" aria-label="햇살 페일에일 맥주 캔 일러스트" data-i18n-aria="paleCan">
-                  <span class="can-brand" data-i18n="brandName">범버꿍</span><span class="can-name" data-i18n="paleCanName">햇살 Pale</span><span class="can-style">CITRUS &amp; HOPS</span><span class="can-abv">ABV 5.2%</span>
-                </div>
-              </div>
-              <div class="beer-info">
-                <div><h3 data-i18n="paleName">햇살 페일에일</h3><p data-i18n="paleCopy">시트러스 향과 은근한 홉의 산뜻한 만남</p></div><span class="beer-abv">5.2% ABV</span>
-              </div>
-            </article>
-            <article class="beer-card">
-              <div class="beer-art">
-                <span class="beer-index">03 / SLOW EVENING</span>
-                <div class="can" aria-label="노을 위트 맥주 캔 일러스트" data-i18n-aria="witCan">
-                  <span class="can-brand" data-i18n="brandName">범버꿍</span><span class="can-name" data-i18n="witCanName">노을 Wit</span><span class="can-style">SOFT &amp; ROUND</span><span class="can-abv">ABV 4.8%</span>
-                </div>
-              </div>
-              <div class="beer-info">
-                <div><h3 data-i18n="witName">노을 위트</h3><p data-i18n="witCopy">부드러운 밀의 풍미, 느긋한 저녁의 한 잔</p></div><span class="beer-abv">4.8% ABV</span>
-              </div>
-            </article>
-          </div>
-          <p class="beer-note" data-i18n="beerNote">* 맥주 이름과 도수는 브랜드 소개를 위한 예시입니다. 실제 제품·판매 정보는 추후 업데이트됩니다.</p>
-        </div>
-      </section>
-
-      <section class="manifesto" id="mind">
-        <div class="wrap manifesto-inner">
-          <div>          <p class="section-kicker" data-i18n="mindKicker">Our brewing mind</p></div>
-          <div>
-            <h2 data-i18n="mindTitle">크게 한 방보다,<br><span>오래 생각나는</span><br>한 잔을 만듭니다.</h2>
-            <div class="manifesto-copy">
-              <p data-i18n="mindCopy">좋은 맥주는 좋은 순간을 더 좋아지게 하니까. 익숙한 재료도 새롭게 바라보고, 작은 차이도 놓치지 않으며, 서두르지 않고 맛을 완성합니다. 범버꿍은 오늘도 우리다운 맥주를 꿍, 하고 빚고 있어요.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="contact" id="contact">
-        <div class="wrap contact-grid">
-          <div>
-            <p class="section-kicker" data-i18n="contactKicker">Let's make it happen</p>
-            <h2 data-i18n="contactTitle">함께 만들<br>좋은 일이 있나요?</h2>
-            <p class="contact-intro" data-i18n="contactIntro">입점, 납품, 콜라보레이션, 행사와 브랜드 제휴까지. 어떤 이야기든 편하게 남겨주세요. 확인 후 정성껏 답장드릴게요.</p>
-            <a class="contact-email" href="mailto:hello@bumbeokkoong.kr" aria-label="이메일로 문의하기" data-i18n-aria="emailLinkLabel">hello@bumbeokkoong.kr <span aria-hidden="true">↗</span></a>
-          </div>
-          <form class="contact-form" id="business-form">
-            <div class="field">
-              <label for="name" data-i18n="formName">담당자 이름</label>
-              <input id="name" name="name" autocomplete="name" placeholder="이름을 입력해 주세요" data-i18n-placeholder="formNamePlaceholder" required>
-            </div>
-            <div class="field">
-              <label for="company" data-i18n="formCompany">회사 / 브랜드</label>
-              <input id="company" name="company" autocomplete="organization" placeholder="회사명을 입력해 주세요" data-i18n-placeholder="formCompanyPlaceholder" required>
-            </div>
-            <div class="field">
-              <label for="email" data-i18n="formEmail">회신 받을 이메일</label>
-              <input id="email" name="email" type="email" autocomplete="email" placeholder="name@company.com" data-i18n-placeholder="formEmailPlaceholder" required>
-            </div>
-            <div class="field">
-              <label for="category" data-i18n="formCategory">문의 유형</label>
-              <select id="category" name="category" required>
-                <option value="" disabled selected data-i18n="formCategoryPlaceholder">선택해 주세요</option>
-                <option value="product" data-i18n="formCategoryProduct">제품 입점 및 납품</option>
-                <option value="collaboration" data-i18n="formCategoryCollab">브랜드 콜라보레이션</option>
-                <option value="event" data-i18n="formCategoryEvent">행사 및 케이터링</option>
-                <option value="other" data-i18n="formCategoryOther">기타 비즈니스 문의</option>
-              </select>
-            </div>
-            <div class="field full">
-              <label for="message" data-i18n="formMessage">문의 내용</label>
-              <textarea id="message" name="message" placeholder="함께 나누고 싶은 이야기를 적어주세요" data-i18n-placeholder="formMessagePlaceholder" required></textarea>
-            </div>
-            <div class="form-bottom">
-              <p class="form-help" data-i18n="formHelp">보내기를 누르면 기본 메일 앱이 열리고, 작성하신 내용이 이메일 초안에 담깁니다.</p>
-              <button class="button form-button" type="submit"><span data-i18n="formSubmit">문의 보내기</span> <span class="arrow" aria-hidden="true">↗</span></button>
-            </div>
-            <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
-          </form>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      <div class="wrap footer-main">
+    <div class="shell">
+      <header>
         <div>
-          <p class="footer-brand" data-i18n="footerBrand">범버꿍 브루어리</p>
-          <p class="footer-copy" data-i18n="footerCopy">Small batch, big heart. &copy; 2026 Bumbeokkoong Brewery.</p>
+          <p class="eyebrow">Heroes of the Storm · Match Coach</p>
+          <h1>히오스 전략 코치</h1>
+          <p class="subtitle">상황을 입력하고, 지금 할 한 가지를 빠르게 확인하세요.</p>
         </div>
-        <p class="footer-note" data-i18n="footerNote">미성년자는 이용할 수 없습니다. 과음은 건강에 해롭습니다.<br>술은 천천히, 좋은 사람들과 함께 즐겨요.</p>
+        <div id="save-state" class="save-state" role="status" aria-live="polite">자동 저장 준비</div>
+      </header>
+
+      <div class="layout">
+        <main class="main-column">
+          <section class="card" aria-labelledby="draft-heading">
+            <div class="card-heading">
+              <h2 id="draft-heading">밴픽 설정</h2>
+              <span class="hint">선택한 영웅은 전황 입력에 반영됩니다</span>
+            </div>
+            <div class="setup-grid">
+              <div>
+                <label class="field-label" for="map">전장</label>
+                <select id="map">
+                  <option value="">전장 선택 (선택 사항)</option>
+                  <option>거미 여왕의 무덤</option><option>공포의 정원</option><option>파멸의 탑</option>
+                  <option>불지옥 신단</option><option>브락시스 항전</option>
+                  <option>볼스카야 공장</option><option>저주받은 골짜기</option><option>용의 둥지</option>
+                  <option>영원의 전쟁터</option><option>하늘 사원</option><option>핵탄두 격전지</option>
+                  <option>알터랙 고개</option><option>하나무라 사원</option><option>블랙하트 항만</option>
+                </select>
+              </div>
+              <fieldset style="padding:0;border:0;margin:0">
+                <legend class="field-label">우리 팀 밴픽 순서</legend>
+                <div class="choice-row">
+                  <label><input type="radio" name="draft-order" value="first"> 선픽</label>
+                  <label><input type="radio" name="draft-order" value="second"> 후픽</label>
+                  <span class="subtle">선택 사항</span>
+                </div>
+              </fieldset>
+            </div>
+            <div class="draft-grid" style="margin-top:14px">
+              <section class="team-box" aria-label="우리 팀 밴픽">
+                <div class="team-title"><span class="dot"></span>우리 팀</div>
+                <div class="draft-group"><p class="draft-group-title">밴</p><div id="our-bans"></div></div>
+                <div class="draft-group"><p class="draft-group-title">픽</p><div id="our-picks"></div></div>
+              </section>
+              <section class="team-box enemy" aria-label="상대 팀 밴픽">
+                <div class="team-title"><span class="dot"></span>상대 팀</div>
+                <div class="draft-group"><p class="draft-group-title">밴</p><div id="enemy-bans"></div></div>
+                <div class="draft-group"><p class="draft-group-title">픽</p><div id="enemy-picks"></div></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="battle-heading">
+            <div class="card-heading">
+              <h2 id="battle-heading">게임 중 전황</h2>
+              <span class="hint">바뀔 때마다 자동 저장</span>
+            </div>
+            <div id="battle-rosters"></div>
+            <div class="level-controls">
+              <div>
+                <label class="field-label" for="level">우리 팀 레벨 상황</label>
+                <select id="level">
+                  <option value="unknown">모름</option><option value="ahead">우리 팀 우위</option>
+                  <option value="even">동레벨</option><option value="behind">우리 팀 열세</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="objective">오브젝트 상황</label>
+                <select id="objective">
+                  <option value="unknown">모름 / 판단 전</option><option value="soon">곧 생성</option>
+                  <option value="ours">우리 팀 오브젝트 진행 중</option><option value="contested">경합 중</option>
+                  <option value="enemy">상대 팀 오브젝트 진행 중</option><option value="secured">이번 오브젝트 확보</option>
+                </select>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <aside class="side-column">
+          <section class="card recommendation" aria-labelledby="recommend-heading">
+            <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
+            <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
+            <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
+            <p id="reason" class="reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
+            <p id="warning" class="warning" hidden></p>
+            <details>
+              <summary>상세 분석 보기</summary>
+              <ul id="analysis" class="analysis"></ul>
+            </details>
+          </section>
+          <section class="card">
+            <h2>사용 안내</h2>
+            <p class="footnote" style="margin-top:9px">추천은 생존 인원, 부활 시간, 레벨, 오브젝트 입력만 보는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
+            <button id="reset" class="reset-button" type="button" style="margin-top:15px">입력 초기화</button>
+          </section>
+        </aside>
       </div>
-    </footer>
+    </div>
 
     <script>
-      const menuToggle = document.querySelector(".menu-toggle");
-      const navLinks = document.querySelector(".nav-links");
-      const languageToggle = document.querySelector(".language-toggle");
-      const formStatus = document.querySelector("#form-status");
+      (() => {
+        "use strict";
 
-      const translations = {
-        ko: {
-          title: "범버꿍 브루어리 — 오늘도, 꿍하게",
-          description: "좋은 재료와 느긋한 마음으로 우리 동네의 맥주를 빚는 범버꿍 브루어리.",
-          navLabel: "주요 메뉴", brandLabel: "범버꿍 브루어리 홈", brandName: "범버꿍", brandEnglish: "BUMBEOKKOONG BREWERY",
-          menuOpen: "메뉴 열기", menuClose: "메뉴 닫기", languageToggleLabel: "Switch to English", languageButton: "EN",
-          navStory: "우리 이야기", navBeer: "우리 맥주", navMind: "양조 철학", navContact: "비즈니스 문의",
-          heroEyebrow: "Small batch, big heart", heroLineOne: "오늘도,", heroLineTwo: "꿍하게.",
-          heroCopy: "잘 익은 하루의 끝에 생각나는 맥주.<br>좋은 재료와 느긋한 마음으로 우리 동네의 한 잔을 빚습니다.",
-          heroButton: "우리 맥주 만나보기", heroFoot: "우리 동네 작은 양조장, 범버꿍",
-          storyKicker: "A little introduction", storyTitle: "맥주 한 잔에<br>동네의 <em>기분</em>을 담아요.",
-          storyCopyOne: "범버꿍은 매일 마셔도 질리지 않는 맥주를 고민하는 작은 브루어리예요. 한 모금은 산뜻하게, 다음 한 모금은 더 편안하게. 누군가의 식탁과 친구들의 긴 수다에 자연스럽게 놓이는 맥주를 만들어요.",
-          storyCopyTwo: "유행을 쫓기보다 좋은 재료의 맛을 살리고, 한 배치 한 배치 정성껏 양조합니다. 오늘의 기분에 꼭 맞는 한 잔을 함께 찾아봐요.",
-          storyLink: "범버꿍이 맥주 빚는 법", beerKicker: "On tap at bumbeokkoong", beerTitle: "오늘의 꿍-픽",
-          beerIntro: "첫 모금부터 마지막 한 방울까지,<br>각기 다른 매력으로 채운 세 가지 한 잔.",
-          lagerCan: "꿍 라거 맥주 캔 일러스트", paleCan: "햇살 페일에일 맥주 캔 일러스트", witCan: "노을 위트 맥주 캔 일러스트",
-          lagerName: "꿍 라거", lagerCanName: "꿍 Lager", lagerCopy: "산뜻한 첫인상, 깔끔한 끝맛의 데일리 라거",
-          paleName: "햇살 페일에일", paleCanName: "햇살 Pale", paleCopy: "시트러스 향과 은근한 홉의 산뜻한 만남",
-          witName: "노을 위트", witCanName: "노을 Wit", witCopy: "부드러운 밀의 풍미, 느긋한 저녁의 한 잔",
-          beerNote: "* 맥주 이름과 도수는 브랜드 소개를 위한 예시입니다. 실제 제품·판매 정보는 추후 업데이트됩니다.",
-          mindKicker: "Our brewing mind", mindTitle: "크게 한 방보다,<br><span>오래 생각나는</span><br>한 잔을 만듭니다.",
-          mindCopy: "좋은 맥주는 좋은 순간을 더 좋아지게 하니까. 익숙한 재료도 새롭게 바라보고, 작은 차이도 놓치지 않으며, 서두르지 않고 맛을 완성합니다. 범버꿍은 오늘도 우리다운 맥주를 꿍, 하고 빚고 있어요.",
-          contactKicker: "Let's make it happen", contactTitle: "함께 만들<br>좋은 일이 있나요?",
-          contactIntro: "입점, 납품, 콜라보레이션, 행사와 브랜드 제휴까지. 어떤 이야기든 편하게 남겨주세요. 확인 후 정성껏 답장드릴게요.",
-          emailLinkLabel: "이메일로 문의하기", formName: "담당자 이름", formNamePlaceholder: "이름을 입력해 주세요",
-          formCompany: "회사 / 브랜드", formCompanyPlaceholder: "회사명을 입력해 주세요", formEmail: "회신 받을 이메일",
-          formEmailPlaceholder: "name@company.com", formCategory: "문의 유형", formCategoryPlaceholder: "선택해 주세요",
-          formCategoryProduct: "제품 입점 및 납품", formCategoryCollab: "브랜드 콜라보레이션",
-          formCategoryEvent: "행사 및 케이터링", formCategoryOther: "기타 비즈니스 문의",
-          formMessage: "문의 내용", formMessagePlaceholder: "함께 나누고 싶은 이야기를 적어주세요",
-          formHelp: "보내기를 누르면 기본 메일 앱이 열리고, 작성하신 내용이 이메일 초안에 담깁니다.",
-          formSubmit: "문의 보내기", formStatus: "메일 앱에서 내용을 확인한 뒤 보내기를 완료해 주세요.",
-          footerBrand: "범버꿍 브루어리", footerCopy: "Small batch, big heart. &copy; 2026 Bumbeokkoong Brewery.",
-          footerNote: "미성년자는 이용할 수 없습니다. 과음은 건강에 해롭습니다.<br>술은 천천히, 좋은 사람들과 함께 즐겨요.",
-          categoryNames: { product: "제품 입점 및 납품", collaboration: "브랜드 콜라보레이션", event: "행사 및 케이터링", other: "기타 비즈니스 문의" },
-          mailSubject: "범버꿍 비즈니스 문의", mailName: "담당자", mailCompany: "회사/브랜드",
-          mailEmail: "회신 이메일", mailCategory: "문의 유형", mailMessage: "문의 내용"
-        },
-        en: {
-          title: "Bumbeokkoong Brewery — A Little Something to Look Forward To",
-          description: "Small-batch neighborhood beer, brewed with good ingredients and an easygoing spirit.",
-          navLabel: "Main navigation", brandLabel: "Bumbeokkoong Brewery home", brandName: "Bumbeokkoong",
-          brandEnglish: "BUMBEOKKOONG BREWERY", menuOpen: "Open menu", menuClose: "Close menu",
-          languageToggleLabel: "한국어로 전환", languageButton: "한국어",
-          navStory: "Our story", navBeer: "Our beers", navMind: "Our craft", navContact: "Business inquiries",
-          heroEyebrow: "Small batch, big heart", heroLineOne: "Brewed for", heroLineTwo: "the good days.",
-          heroCopy: "The kind of beer you think about at the end of a good day.<br>Made with good ingredients and a little breathing room.",
-          heroButton: "Meet our beers", heroFoot: "Your neighborhood brewery, Bumbeokkoong",
-          storyKicker: "A little introduction", storyTitle: "A little neighborhood<br>feeling in <em>every pour.</em>",
-          storyCopyOne: "We’re a small brewery making beer you’ll want to come back to. A bright first sip, an easy next one. Beer that belongs at the dinner table and alongside long conversations with friends.",
-          storyCopyTwo: "We follow the flavor of good ingredients, not the latest trend, and give every batch the care it deserves. Let’s find a pour that feels just right today.",
-          storyLink: "How we make our beer", beerKicker: "On tap at bumbeokkoong", beerTitle: "Meet your new favorites",
-          beerIntro: "From the first sip to the last drop,<br>three beers, each with its own little charm.",
-          lagerCan: "Kkoong Lager beer can illustration", paleCan: "Sunshine Pale Ale beer can illustration",
-          witCan: "Sunset Wit beer can illustration", lagerName: "Kkoong Lager", lagerCanName: "Kkoong Lager",
-          lagerCopy: "Bright up front, crisp and clean to the finish",
-          paleName: "Sunshine Pale Ale", paleCanName: "Sunshine Pale",
-          paleCopy: "A sunny lift of citrus with a gentle touch of hops",
-          witName: "Sunset Wit", witCanName: "Sunset Wit", witCopy: "Soft wheat character for a slow evening",
-          beerNote: "* Beer names and ABVs are examples for this brand introduction. Product and availability details will be updated.",
-          mindKicker: "Our brewing mind", mindTitle: "Not a passing craze.<br><span>A beer you’ll remember,</span><br>one easy sip at a time.",
-          mindCopy: "Good beer makes good moments even better. We look at familiar ingredients with fresh eyes, care about the little things, and take our time getting the flavor right. That’s how we brew a beer that feels like us.",
-          contactKicker: "Let's make it happen", contactTitle: "Have something<br>good in mind?",
-          contactIntro: "From retail and wholesale to collaborations, events, and brand partnerships—we’d love to hear what you’re thinking. Send us a note and we’ll get back to you.",
-          emailLinkLabel: "Contact us by email", formName: "Your name", formNamePlaceholder: "Enter your name",
-          formCompany: "Company / brand", formCompanyPlaceholder: "Enter your company name",
-          formEmail: "Email for our reply", formEmailPlaceholder: "name@company.com", formCategory: "Inquiry type",
-          formCategoryPlaceholder: "Please select", formCategoryProduct: "Retail & wholesale",
-          formCategoryCollab: "Brand collaboration", formCategoryEvent: "Events & catering",
-          formCategoryOther: "Other business inquiry", formMessage: "Your message",
-          formMessagePlaceholder: "Tell us a little about what you have in mind",
-          formHelp: "Send opens a draft in your default email app with your message included.",
-          formSubmit: "Send inquiry", formStatus: "Please review and send your message in your email app.",
-          footerBrand: "Bumbeokkoong Brewery",
-          footerCopy: "Small batch, big heart. &copy; 2026 Bumbeokkoong Brewery.",
-          footerNote: "For adults of legal drinking age only. Please enjoy responsibly.<br>Take it slow, and share a good one with good people.",
-          categoryNames: { product: "Retail & wholesale", collaboration: "Brand collaboration", event: "Events & catering", other: "Other business inquiry" },
-          mailSubject: "Bumbeokkoong business inquiry", mailName: "Name", mailCompany: "Company / brand",
-          mailEmail: "Reply email", mailCategory: "Inquiry type", mailMessage: "Message"
+        const STORAGE_KEY = "hots-strategy-coach-state-v1";
+        const heroList = [
+          "가로쉬","가즈로","갈","겐지","굴단","길 잃은 바이킹","나지보","노바","누더기","데커드 케인",
+          "데스윙","데하카","도살자","디아블로","라그나로스","레가르","레이너","레오릭","렉사르","루나라",
+          "루시우","리 리","리밍","마이에브","말가니스","말퓨리온","말티엘","메디브","메이","메피스토",
+          "머키","모랄레스 중위","무라딘","바리안","발라","발리라","블레이즈","빛나래","사무로","소냐",
+          "스랄","스투코프","실바나스","아나","아눕아락","아르타니스","아바투르","아서스","아우리엘",
+          "아즈모단","알라라크","알렉스트라자","안두인","오르피아","요한나","우서","이렐","일리단",
+          "임페리우스","자가라","자리야","정예 타우렌 족장","정크랫","제이나","제라툴","줄","초","첸",
+          "카시아","카라짐","케리건","켈타스","켈투자드","크로미","키히라","타이커스","태사다르",
+          "트레이서","티리엘","티란데","폴스타트","프로비우스","피닉스","해머 상사","한조","호거",
+          "화이트메인","D.Va"
+        ].filter((hero, index, list) => list.indexOf(hero) === index).sort((a, b) => a.localeCompare(b, "ko"));
+        const slots = {
+          ourBans: { count: 3, label: "아군 밴" },
+          ourPicks: { count: 5, label: "아군 픽" },
+          enemyBans: { count: 3, label: "상대 밴" },
+          enemyPicks: { count: 5, label: "상대 픽" }
+        };
+        const defaultState = () => ({
+          map: "", draftOrder: "", draft: Object.fromEntries(
+            Object.entries(slots).map(([key, value]) => [key, Array(value.count).fill("")])
+          ),
+          battle: Object.fromEntries(["ours", "enemy"].map((team) => [
+            team, Array.from({ length: 5 }, () => ({ hero: "", alive: true, respawn: 0, ultimate: "unknown" }))
+          ])),
+          level: "unknown", objective: "unknown"
+        });
+        const saveState = document.querySelector("#save-state");
+        let state = defaultState();
+
+        function normalizeState(value) {
+          const fresh = defaultState();
+          if (!value || typeof value !== "object") return fresh;
+          if (typeof value.map === "string") fresh.map = value.map;
+          if (value.draftOrder === "first" || value.draftOrder === "second") fresh.draftOrder = value.draftOrder;
+          if (value.draft && typeof value.draft === "object") {
+            for (const [key, config] of Object.entries(slots)) {
+              if (Array.isArray(value.draft[key])) {
+                fresh.draft[key] = Array.from({ length: config.count }, (_, i) =>
+                  heroList.includes(value.draft[key][i]) ? value.draft[key][i] : ""
+                );
+              }
+            }
+          }
+          if (value.level && ["unknown", "ahead", "even", "behind"].includes(value.level)) fresh.level = value.level;
+          if (value.objective && ["unknown", "soon", "ours", "contested", "enemy", "secured"].includes(value.objective)) fresh.objective = value.objective;
+          for (const team of ["ours", "enemy"]) {
+            if (Array.isArray(value.battle?.[team])) {
+              fresh.battle[team] = Array.from({ length: 5 }, (_, i) => {
+                const member = value.battle[team][i];
+                return {
+                  hero: heroList.includes(member?.hero) ? member.hero : "",
+                  alive: member?.alive !== false,
+                  respawn: Number.isFinite(member?.respawn) ? Math.min(180, Math.max(0, member.respawn)) : 0,
+                  ultimate: ["unknown", "ready", "used"].includes(member?.ultimate) ? member.ultimate : "unknown"
+                };
+              });
+            }
+          }
+          return fresh;
         }
-      };
 
-      let currentLanguage = "ko";
-
-      function setLanguage(language) {
-        currentLanguage = language;
-        const copy = translations[language];
-        document.documentElement.lang = language;
-        document.title = copy.title;
-        document.querySelector("#page-description").content = copy.description;
-
-        document.querySelectorAll("[data-i18n]").forEach((element) => {
-          element.innerHTML = copy[element.dataset.i18n];
-        });
-        document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
-          element.placeholder = copy[element.dataset.i18nPlaceholder];
-        });
-        document.querySelectorAll("[data-i18n-aria]").forEach((element) => {
-          element.setAttribute("aria-label", copy[element.dataset.i18nAria]);
-        });
-
-        languageToggle.textContent = copy.languageButton;
-        languageToggle.setAttribute("aria-label", copy.languageToggleLabel);
-        menuToggle.setAttribute("aria-label", menuToggle.getAttribute("aria-expanded") === "true" ? copy.menuClose : copy.menuOpen);
-        formStatus.textContent = "";
-      }
-
-      menuToggle.addEventListener("click", () => {
-        const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
-        menuToggle.setAttribute("aria-expanded", String(!isOpen));
-        const copy = translations[currentLanguage];
-        menuToggle.setAttribute("aria-label", isOpen ? copy.menuOpen : copy.menuClose);
-        navLinks.classList.toggle("is-open", !isOpen);
-      });
-
-      navLinks.addEventListener("click", (event) => {
-        if (event.target.closest(".language-toggle")) {
-          setLanguage(currentLanguage === "ko" ? "en" : "ko");
-        } else if (event.target.closest("a")) {
-          menuToggle.setAttribute("aria-expanded", "false");
-          menuToggle.setAttribute("aria-label", translations[currentLanguage].menuOpen);
-          navLinks.classList.remove("is-open");
+        function loadState() {
+          try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+              state = normalizeState(JSON.parse(stored));
+              saveState.textContent = "이 기기에서 입력 불러옴";
+            } else {
+              saveState.textContent = "입력 후 이 기기에 자동 저장";
+            }
+          } catch (error) {
+            console.error("저장된 전황을 불러오지 못했습니다.", error);
+            saveState.textContent = "저장 데이터 읽기 실패";
+            saveState.classList.add("error");
+          }
         }
-      });
 
-      document.querySelector("#business-form").addEventListener("submit", (event) => {
-        event.preventDefault();
-        const form = event.currentTarget;
-        if (!form.reportValidity()) return;
+        function persist() {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            saveState.textContent = "이 기기에 자동 저장됨";
+            saveState.classList.remove("error");
+          } catch (error) {
+            console.error("전황을 저장하지 못했습니다.", error);
+            saveState.textContent = "저장 실패 · 브라우저 설정 확인";
+            saveState.classList.add("error");
+          }
+        }
 
-        const fields = new FormData(form);
-        const copy = translations[currentLanguage];
-        const subject = `[${copy.mailSubject}] ${copy.categoryNames[fields.get("category")]} - ${fields.get("company")}`;
-        const body = [
-          `${copy.mailName}: ${fields.get("name")}`,
-          `${copy.mailCompany}: ${fields.get("company")}`,
-          `${copy.mailEmail}: ${fields.get("email")}`,
-          `${copy.mailCategory}: ${copy.categoryNames[fields.get("category")]}`,
-          "",
-          `${copy.mailMessage}:`,
-          fields.get("message")
-        ].join("\n");
-        const mailto = `mailto:hello@bumbeokkoong.kr?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        function allUsed(exceptKey, exceptIndex) {
+          const used = new Set();
+          for (const [key, values] of Object.entries(state.draft)) {
+            values.forEach((hero, index) => {
+              if (hero && !(key === exceptKey && index === exceptIndex)) used.add(hero);
+            });
+          }
+          return used;
+        }
 
-        formStatus.textContent = copy.formStatus;
-        window.location.href = mailto;
-      });
+        function heroOptions(selected, used) {
+          const options = ['<option value="">영웅 선택</option>'];
+          for (const hero of heroList) {
+            if (!used.has(hero) || hero === selected) {
+              options.push(`<option value="${hero}"${hero === selected ? " selected" : ""}>${hero}</option>`);
+            }
+          }
+          return options.join("");
+        }
 
-      setLanguage("ko");
+        function renderDraft() {
+          for (const [key, config] of Object.entries(slots)) {
+            const container = document.querySelector(`#${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`);
+            container.innerHTML = state.draft[key].map((hero, index) => {
+              const used = allUsed(key, index);
+              return `<label class="draft-slot"><span>${index + 1}</span><select data-draft="${key}" data-index="${index}" aria-label="${config.label} ${index + 1}">${heroOptions(hero, used)}</select></label>`;
+            }).join("");
+          }
+          document.querySelectorAll("[data-draft]").forEach((select) => {
+            select.addEventListener("change", () => {
+              const key = select.dataset.draft;
+              const index = Number(select.dataset.index);
+              state.draft[key][index] = select.value;
+              renderDraft();
+              renderRosters();
+              updateRecommendation();
+              persist();
+            });
+          });
+        }
+
+        function pickedHero(team, index) {
+          const picks = state.draft[team === "ours" ? "ourPicks" : "enemyPicks"];
+          return picks[index] || "";
+        }
+
+        function renderRosters() {
+          const root = document.querySelector("#battle-rosters");
+          root.innerHTML = ["ours", "enemy"].map((team) => {
+            const isOurs = team === "ours";
+            const title = isOurs ? "우리 팀" : "상대 팀";
+            return `<section class="battle-team ${isOurs ? "" : "enemy"}">
+              <div class="team-title"><span class="dot"></span>${title}<span class="team-count" id="${team}-count"></span></div>
+              <div class="roster">${Array.from({ length: 5 }, (_, index) => {
+                const member = state.battle[team][index];
+                const drafted = pickedHero(team, index);
+                const hero = drafted || member.hero;
+                const dead = !member.alive;
+                return `<div class="hero-row">
+                  <span class="hero-name" title="${hero || "밴픽에서 영웅을 선택하세요"}">${hero || '<span class="empty">영웅 미정</span>'}</span>
+                  <select class="status-select ${dead ? "dead" : "alive"}" data-team="${team}" data-index="${index}" data-field="alive" aria-label="${title} ${hero || `${index + 1}번`} 생존 상태">
+                    <option value="alive"${member.alive ? " selected" : ""}>생존</option><option value="dead"${dead ? " selected" : ""}>사망</option>
+                  </select>
+                  <input type="number" min="0" max="180" step="1" value="${member.respawn}" data-team="${team}" data-index="${index}" data-field="respawn" aria-label="${title} ${hero || `${index + 1}번`} 부활 시간(초)"${member.alive ? " disabled" : ""}>
+                  <select data-team="${team}" data-index="${index}" data-field="ultimate" aria-label="${title} ${hero || `${index + 1}번`} 주요 궁극기">
+                    <option value="unknown"${member.ultimate === "unknown" ? " selected" : ""}>궁 미확인</option>
+                    <option value="ready"${member.ultimate === "ready" ? " selected" : ""}>궁 가능</option>
+                    <option value="used"${member.ultimate === "used" ? " selected" : ""}>궁 사용</option>
+                  </select>
+                </div>`;
+              }).join("")}</div>
+            </section>`;
+          }).join("");
+          root.querySelectorAll("[data-field]").forEach((control) => {
+            const update = () => {
+              const team = control.dataset.team;
+              const index = Number(control.dataset.index);
+              const field = control.dataset.field;
+              if (field === "alive") state.battle[team][index].alive = control.value === "alive";
+              if (field === "respawn") state.battle[team][index].respawn = Math.min(180, Math.max(0, Number(control.value) || 0));
+              if (field === "ultimate") state.battle[team][index].ultimate = control.value;
+              if (field !== "respawn") renderRosters();
+              updateRecommendation();
+              persist();
+            };
+            control.addEventListener(control.dataset.field === "respawn" ? "input" : "change", update);
+          });
+          for (const team of ["ours", "enemy"]) {
+            const alive = state.battle[team].filter((member) => member.alive).length;
+            document.querySelector(`#${team}-count`).textContent = `${alive}/5 생존`;
+          }
+        }
+
+        function makeRecommendation() {
+          const ours = state.battle.ours;
+          const enemy = state.battle.enemy;
+          const oursAlive = ours.filter((member) => member.alive).length;
+          const enemyAlive = enemy.filter((member) => member.alive).length;
+          const oursDeaths = ours.filter((member) => !member.alive);
+          const enemyDeaths = enemy.filter((member) => !member.alive);
+          const oursLongest = Math.max(0, ...oursDeaths.map((member) => member.respawn));
+          const enemyLongest = Math.max(0, ...enemyDeaths.map((member) => member.respawn));
+          const missingHeroes = ["ours", "enemy"].some((team) =>
+            state.battle[team].some((member, index) => !pickedHero(team, index))
+          );
+          const incomplete = missingHeroes || state.level === "unknown" || state.objective === "unknown";
+          const lines = [
+            `생존 인원: 우리 ${oursAlive}/5 · 상대 ${enemyAlive}/5`,
+            `사망 및 부활: 우리 ${oursDeaths.length}명(최대 ${oursLongest}초) · 상대 ${enemyDeaths.length}명(최대 ${enemyLongest}초)`,
+            `레벨: ${{unknown:"미확인",ahead:"우리 팀 우위",even:"동레벨",behind:"우리 팀 열세"}[state.level]}`,
+            `오브젝트: ${{unknown:"미확인",soon:"곧 생성",ours:"우리 팀 진행 중",contested:"경합 중",enemy:"상대 팀 진행 중",secured:"확보 완료"}[state.objective]}`
+          ];
+          const readyOurs = ours.filter((member) => member.ultimate === "ready").length;
+          const usedOurs = ours.filter((member) => member.ultimate === "used").length;
+          lines.push(`우리 팀 궁극기: 가능 ${readyOurs} · 사용 ${usedOurs} · 미확인 ${5 - readyOurs - usedOurs}`);
+          const base = {
+            action: "안전하게 모여 라인 경험치를 챙기세요",
+            reason: "확인된 정보가 적어 무리한 교전보다 안전한 파밍이 낫습니다.",
+            warning: "생존·레벨·오브젝트 정보를 더 입력하면 추천이 구체적으로 바뀝니다.",
+            analysis: lines
+          };
+          const set = (action, reason, warning = "") => ({
+            ...base, action, reason,
+            warning: warning || (incomplete ? "밴픽·레벨·오브젝트 정보가 일부 미확인입니다. 실제 전황을 확인하고 무리한 진입은 피하세요." : "")
+          });
+
+          if (oursAlive <= 2 && oursAlive < enemyAlive) {
+            return set("후퇴해 시간을 버세요", "우리 팀 생존 인원이 적어 정면 교전에서 수적 열세입니다.", "사망 영웅의 부활 전까지 오브젝트 경합과 깊은 진입을 피하세요.");
+          }
+          if (oursLongest >= 15 && oursLongest > enemyLongest + 10 && oursAlive < enemyAlive) {
+            return set("후퇴해 아군 부활을 기다리세요", "아군의 가장 긴 부활 대기 시간이 상대보다 길고 생존 인원도 적습니다.", "입력한 부활 시간이 실제 남은 시간과 맞는지 확인하세요.");
+          }
+          if (enemyLongest >= 15 && enemyLongest > oursLongest + 10 && oursAlive >= enemyAlive) {
+            return set("수적 우위 시간에 가까운 목표를 압박하세요", "상대의 부활 대기 시간이 더 길어 잠시 수적 우위를 활용할 수 있습니다.", "부활 타이머가 끝나기 전에 팀이 함께 움직이고, 무리한 추격은 피하세요.");
+          }
+          if (enemyAlive <= 2 && oursAlive >= enemyAlive + 2) {
+            if (state.objective === "ours" || state.objective === "contested" || state.objective === "soon") {
+              return set("팀을 모아 오브젝트를 확보하세요", "상대 생존 인원이 적어 짧은 시간 동안 안전하게 수적 우위를 활용할 수 있습니다.");
+            }
+            return set("가까운 안전한 목표를 함께 확보하세요", "상대 팀의 생존 인원이 적습니다. 무리한 추격보다 가까운 목표가 안전합니다.");
+          }
+          if (state.level === "behind" && state.objective !== "secured") {
+            return set("교전을 피하고 경험치를 모으세요", "레벨 열세에서는 불리한 교전보다 라인 경험치 수급이 우선입니다.", "오브젝트가 이미 시작됐다면 인원과 진입 경로를 확인한 뒤 판단하세요.");
+          }
+          if (state.objective === "enemy") {
+            return set("오브젝트에서 물러나 라인을 정리하세요", "상대가 오브젝트를 진행 중입니다. 수적·레벨 우위가 확인되지 않아 맞교전은 위험합니다.", "상대 사망이나 확실한 인원 우위를 확인하기 전에는 진입하지 마세요.");
+          }
+          if (state.objective === "contested") {
+            if (oursAlive > enemyAlive && (state.level === "ahead" || state.level === "even")) {
+              return set("팀을 모아 오브젝트에 합류하세요", "생존 인원 우위와 레벨 열세가 아닌 상황이라 함께 합류할 여지가 있습니다.");
+            }
+            return set("시야와 합류 인원을 확인하세요", "교전 조건이 확실하지 않습니다. 팀이 모이기 전 단독 진입은 피하세요.", "인원·레벨·궁극기 우위가 확인되지 않았습니다.");
+          }
+          if (state.objective === "ours") {
+            return set("오브젝트를 안전하게 마무리하세요", "우리 팀이 진행 중입니다. 상대의 진입 경로를 살피며 흩어지지 마세요.");
+          }
+          if (state.objective === "soon") {
+            return set("팀을 모으고 오브젝트 주변을 확인하세요", "오브젝트가 곧 생성됩니다. 미리 합류하면 단독으로 늦게 진입하는 위험을 줄일 수 있습니다.");
+          }
+          if (oursAlive >= enemyAlive + 2) {
+            return set("가까운 목표를 함께 압박하세요", "생존 인원 우위가 있습니다. 흩어지지 말고 가까운 라인이나 구조물을 압박하세요.");
+          }
+          if (state.level === "ahead" && oursAlive >= enemyAlive) {
+            return set("팀을 모아 유리한 교전을 찾으세요", "레벨 우위와 생존 인원을 바탕으로 유리한 위치의 교전을 선택하세요.");
+          }
+          if (state.level === "even" && oursAlive >= 4 && enemyAlive >= 4) {
+            return set("다섯 명을 모아 안전한 라인을 압박하세요", "양 팀 생존 인원이 비슷합니다. 단독 교전보다 팀 합류와 위치 확인이 우선입니다.");
+          }
+          if (state.objective === "secured") {
+            return set("오브젝트 이득을 활용해 라인을 정리하세요", "이번 오브젝트는 확보했습니다. 다음 목표를 준비하며 불필요한 추격을 삼가세요.");
+          }
+          if (missingHeroes || state.level === "unknown" || state.objective === "unknown") {
+            return { ...base, warning: missingHeroes ? "밴픽 영웅이 비어 있고 전황 일부가 미확인입니다. 실제 상황을 확인한 뒤 행동하세요." : base.warning };
+          }
+          return set("팀과 함께 안전한 라인을 정리하세요", "뚜렷한 우위가 확인되지 않아 고립을 피하고 다음 오브젝트에 대비하세요.");
+        }
+
+        function updateRecommendation() {
+          const recommendation = makeRecommendation();
+          document.querySelector("#recommendation").textContent = recommendation.action;
+          document.querySelector("#reason").textContent = recommendation.reason;
+          const warning = document.querySelector("#warning");
+          warning.textContent = recommendation.warning;
+          warning.hidden = !recommendation.warning;
+          document.querySelector("#analysis").innerHTML = recommendation.analysis.map((line) => `<li>${line}</li>`).join("");
+        }
+
+        function render() {
+          document.querySelector("#map").value = state.map;
+          const order = document.querySelector(`input[name="draft-order"][value="${state.draftOrder}"]`);
+          if (order) order.checked = true;
+          document.querySelector("#level").value = state.level;
+          document.querySelector("#objective").value = state.objective;
+          renderDraft();
+          renderRosters();
+          updateRecommendation();
+        }
+
+        loadState();
+        render();
+        document.querySelector("#map").addEventListener("change", (event) => { state.map = event.target.value; persist(); });
+        document.querySelectorAll('input[name="draft-order"]').forEach((radio) => radio.addEventListener("change", () => {
+          state.draftOrder = radio.value;
+          persist();
+        }));
+        for (const id of ["level", "objective"]) {
+          document.querySelector(`#${id}`).addEventListener("change", (event) => {
+            state[id] = event.target.value;
+            updateRecommendation();
+            persist();
+          });
+        }
+        document.querySelector("#reset").addEventListener("click", () => {
+          if (!window.confirm("밴픽과 전황 입력을 모두 초기화할까요?")) return;
+          state = defaultState();
+          render();
+          persist();
+        });
+      })();
     </script>
   </body>
 </html>
