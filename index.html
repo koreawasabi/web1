@@ -134,7 +134,7 @@
       .roster { display: grid; gap: 7px; }
       .hero-row {
         display: grid;
-        grid-template-columns: minmax(95px, 1fr) 112px 80px 86px;
+        grid-template-columns: minmax(95px, 1fr) 112px 86px;
         align-items: center;
         gap: 8px;
         padding: 9px 10px;
@@ -146,8 +146,7 @@
       .hero-portrait { width: 42px; height: 42px; flex: 0 0 42px; border: 1px solid var(--line); border-radius: 8px; background: #202838; object-fit: cover; }
       .hero-name { overflow: hidden; font-size: .82rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
       .hero-name .empty { color: #778399; font-weight: 500; }
-      .hero-row select, .hero-row input { min-height: 36px; padding: 5px 7px; font-size: .76rem; }
-      .hero-row input:disabled { opacity: .4; cursor: not-allowed; }
+      .hero-row select { min-height: 36px; padding: 5px 7px; font-size: .76rem; }
       .life-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: #0b111a; }
       .life-button { min-height: 34px; padding: 4px 7px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--muted); font-size: .76rem; font-weight: 700; }
       .life-button[aria-pressed="true"][data-value="alive"] { border-color: #386b55; background: #224c3a; color: #a5f0c7; }
@@ -161,8 +160,13 @@
       .recommendation { position: sticky; top: 16px; border-color: #455774; background: linear-gradient(145deg, #202d40, #191f2c 72%); }
       .recommendation .card-heading { margin-bottom: 11px; }
       .recommendation-label { color: var(--gold); font-size: .76rem; font-weight: 800; letter-spacing: .1em; }
-      .action { margin: 0; font-size: clamp(1.45rem, 3vw, 2.1rem); line-height: 1.2; letter-spacing: -.04em; }
-      .reason { margin: 12px 0 0; color: #d4dceb; font-size: .91rem; }
+      .survival-summary { display: grid; gap: 6px; margin: 0 0 14px; }
+      .survival-team { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; font-size: .82rem; }
+      .survival-team strong { font-weight: 800; }
+      .survival-team.ours-trailing strong, .survival-team.enemy-leading strong { color: #ff9298; }
+      .survival-team.ours-leading strong, .survival-team.enemy-trailing strong { color: #91e6b8; }
+      .action { margin: 0; padding-left: 12px; border-left: 4px solid var(--blue); font-size: clamp(1.45rem, 3vw, 2.1rem); font-weight: 850; line-height: 1.2; letter-spacing: -.04em; }
+      .reason { margin: 12px 0 0; color: #edf2fa; font-size: .96rem; font-weight: 600; }
       .warning { margin: 12px 0 0; padding: 9px 11px; border-left: 3px solid var(--gold); border-radius: 5px; background: #ffd16612; color: #ffe2a0; font-size: .82rem; }
       details { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
       summary { color: #c8d4e6; font-size: .85rem; font-weight: 700; cursor: pointer; }
@@ -187,10 +191,11 @@
         .draft-actions button { width: 100%; }
         .hero-results { grid-template-columns: 1fr; }
         .hero-row { grid-template-columns: minmax(0, 1fr) minmax(122px, .9fr); gap: 6px; padding: 7px 6px; }
-        .hero-identity, .hero-row input { grid-column: 1; }
-        .hero-row .life-toggle, .hero-row select { grid-column: 2; }
+        .hero-identity { grid-column: 1; }
+        .hero-row .life-toggle { grid-column: 2; }
+        .hero-row select { grid-column: 1 / -1; }
         .hero-portrait { width: 36px; height: 36px; flex-basis: 36px; }
-        .hero-row select, .hero-row input { padding: 4px; font-size: .7rem; }
+        .hero-row select { padding: 4px; font-size: .7rem; }
         .hero-name { font-size: .75rem; }
         .objective-options { gap: 7px; }
         .objective-options label { padding: 7px; font-size: .78rem; }
@@ -291,6 +296,7 @@
             <section class="card recommendation" aria-labelledby="recommend-heading">
               <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
               <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
+              <div id="survival-summary" class="survival-summary" aria-live="polite"></div>
               <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
               <p id="reason" class="reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
               <p id="warning" class="warning" hidden></p>
@@ -301,7 +307,7 @@
             </section>
             <section class="card">
               <h2>사용 안내</h2>
-              <p class="footnote" style="margin-top:9px">추천은 생존 인원, 부활 시간, 레벨, 오브젝트 입력만 보는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
+              <p class="footnote" style="margin-top:9px">추천은 생존 인원, 레벨, 오브젝트 입력만 보는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
               <button id="reset" class="reset-button" type="button" style="margin-top:15px">입력 초기화</button>
             </section>
           </aside>
@@ -545,7 +551,6 @@
                     <button class="life-button" type="button" data-team="${team}" data-index="${index}" data-field="alive" data-value="alive" aria-pressed="${member.alive}">생존</button>
                     <button class="life-button" type="button" data-team="${team}" data-index="${index}" data-field="alive" data-value="dead" aria-pressed="${dead}">사망</button>
                   </div>
-                  <input type="number" min="0" max="180" step="1" value="${member.respawn}" data-team="${team}" data-index="${index}" data-field="respawn" aria-label="${title} ${hero || `${index + 1}번`} 부활 시간(초)"${member.alive ? " disabled" : ""}>
                   <select data-team="${team}" data-index="${index}" data-field="ultimate" aria-label="${title} ${hero || `${index + 1}번`} 주요 궁극기">
                     <option value="unknown"${member.ultimate === "unknown" ? " selected" : ""}>궁 미확인</option>
                     <option value="ready"${member.ultimate === "ready" ? " selected" : ""}>궁 가능</option>
@@ -564,13 +569,12 @@
               const index = Number(control.dataset.index);
               const field = control.dataset.field;
               if (field === "alive") state.battle[team][index].alive = control.dataset.value === "alive";
-              if (field === "respawn") state.battle[team][index].respawn = Math.min(180, Math.max(0, Number(control.value) || 0));
               if (field === "ultimate") state.battle[team][index].ultimate = control.value;
-              if (field !== "respawn") renderRosters();
+              renderRosters();
               updateRecommendation();
               persist();
             };
-            control.addEventListener(control.dataset.field === "respawn" ? "input" : control.tagName === "BUTTON" ? "click" : "change", update);
+            control.addEventListener(control.tagName === "BUTTON" ? "click" : "change", update);
           });
           for (const team of ["ours", "enemy"]) {
             const alive = state.battle[team].filter((member) => member.alive).length;
@@ -583,17 +587,12 @@
           const enemy = state.battle.enemy;
           const oursAlive = ours.filter((member) => member.alive).length;
           const enemyAlive = enemy.filter((member) => member.alive).length;
-          const oursDeaths = ours.filter((member) => !member.alive);
-          const enemyDeaths = enemy.filter((member) => !member.alive);
-          const oursLongest = Math.max(0, ...oursDeaths.map((member) => member.respawn));
-          const enemyLongest = Math.max(0, ...enemyDeaths.map((member) => member.respawn));
           const missingHeroes = ["ours", "enemy"].some((team) =>
             state.battle[team].some((member, index) => !pickedHero(team, index))
           );
           const incomplete = missingHeroes || state.level === "unknown" || state.objective === "unknown";
           const lines = [
-            `생존 인원: 우리 ${oursAlive}/5 · 상대 ${enemyAlive}/5`,
-            `사망 및 부활: 우리 ${oursDeaths.length}명(최대 ${oursLongest}초) · 상대 ${enemyDeaths.length}명(최대 ${enemyLongest}초)`,
+            `생존 인원: 우리 팀 ${oursAlive}/5 · 상대 팀 ${enemyAlive}/5`,
             `레벨: ${{unknown:"미확인",ahead:"우리 팀 우위",even:"동레벨",behind:"우리 팀 열세"}[state.level]}`,
             `오브젝트: ${{unknown:"미확인",soon:"곧 생성",ours:"우리 팀 진행 중",contested:"경합 중",enemy:"상대 팀 진행 중",secured:"확보 완료"}[state.objective]}`
           ];
@@ -612,13 +611,7 @@
           });
 
           if (oursAlive <= 2 && oursAlive < enemyAlive) {
-            return set("후퇴해 시간을 버세요", "우리 팀 생존 인원이 적어 정면 교전에서 수적 열세입니다.", "사망 영웅의 부활 전까지 오브젝트 경합과 깊은 진입을 피하세요.");
-          }
-          if (oursLongest >= 15 && oursLongest > enemyLongest + 10 && oursAlive < enemyAlive) {
-            return set("후퇴해 아군 부활을 기다리세요", "아군의 가장 긴 부활 대기 시간이 상대보다 길고 생존 인원도 적습니다.", "입력한 부활 시간이 실제 남은 시간과 맞는지 확인하세요.");
-          }
-          if (enemyLongest >= 15 && enemyLongest > oursLongest + 10 && oursAlive >= enemyAlive) {
-            return set("수적 우위 시간에 가까운 목표를 압박하세요", "상대의 부활 대기 시간이 더 길어 잠시 수적 우위를 활용할 수 있습니다.", "부활 타이머가 끝나기 전에 팀이 함께 움직이고, 무리한 추격은 피하세요.");
+            return set("후퇴해 시간을 버세요", "우리 팀 생존 인원이 적어 정면 교전에서 수적 열세입니다.", "아군이 다시 합류할 때까지 오브젝트 경합과 깊은 진입을 피하세요.");
           }
           if (enemyAlive <= 2 && oursAlive >= enemyAlive + 2) {
             if (state.objective === "ours" || state.objective === "contested" || state.objective === "soon") {
@@ -664,6 +657,24 @@
 
         function updateRecommendation() {
           const recommendation = makeRecommendation();
+          const oursAlive = state.battle.ours.filter((member) => member.alive).length;
+          const enemyAlive = state.battle.enemy.filter((member) => member.alive).length;
+          const survivalSummary = document.querySelector("#survival-summary");
+          survivalSummary.replaceChildren();
+          for (const [team, label, alive, otherAlive] of [
+            ["ours", "우리 팀", oursAlive, enemyAlive],
+            ["enemy", "상대 팀", enemyAlive, oursAlive]
+          ]) {
+            const row = document.createElement("div");
+            const advantage = alive < otherAlive ? "trailing" : alive > otherAlive ? "leading" : "even";
+            row.className = `survival-team ${team}-${advantage}`;
+            const teamLabel = document.createElement("span");
+            teamLabel.textContent = label;
+            const count = document.createElement("strong");
+            count.textContent = `${alive}/5 생존${advantage === "trailing" ? " · 열세" : advantage === "leading" ? " · 우세" : " · 동수"}`;
+            row.append(teamLabel, count);
+            survivalSummary.append(row);
+          }
           document.querySelector("#recommendation").textContent = recommendation.action;
           document.querySelector("#reason").textContent = recommendation.reason;
           const warning = document.querySelector("#warning");
