@@ -173,6 +173,18 @@
       .level-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 14px; }
       .level-input { width: 100%; }
       .level-stage-summary { margin: -6px 0 14px; color: var(--muted); font-size: .76rem; }
+      .objective-timer { margin: 14px 0; padding: 14px; border: 1px solid #455774; border-radius: 12px; background: #111824; }
+      .timer-heading, .timer-readout, .timer-controls, .event-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 9px; }
+      .timer-clock { color: var(--gold); font-size: 1.5rem; font-variant-numeric: tabular-nums; font-weight: 850; }
+      .timer-status { margin: 6px 0; font-weight: 750; }
+      .timer-controls { justify-content: flex-start; margin-top: 10px; }
+      .timer-controls button, .event-controls button { min-height: 38px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #202838; color: var(--text); font-weight: 700; }
+      .timer-controls button:hover, .event-controls button:hover { border-color: var(--blue); }
+      .timer-adjust { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 10px; }
+      .event-controls { justify-content: flex-start; margin-top: 10px; }
+      .event-controls select { width: auto; min-width: 130px; min-height: 38px; padding: 5px 8px; }
+      .timer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+      .timer-grid .field-label { margin-bottom: 4px; }
       .objective-options { display: flex; flex-wrap: wrap; gap: 10px 16px; }
       .objective-options label { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; }
       .recommendation { position: sticky; top: 16px; border-color: #455774; background: linear-gradient(145deg, #202d40, #191f2c 72%); }
@@ -243,6 +255,7 @@
         .life-button { padding: 3px 4px; font-size: .68rem; }
         .objective-options { gap: 7px; }
         .objective-options label { padding: 7px; font-size: .78rem; }
+        .timer-adjust, .timer-grid { grid-template-columns: 1fr; }
       }
       @media (max-width: 380px) {
         #battle-rosters { gap: 6px; }
@@ -355,6 +368,58 @@
                 </div>
               </div>
               <p id="level-stage-summary" class="level-stage-summary" role="status" aria-live="polite">양 팀 레벨을 입력하면 게임 단계와 특성 구간 우위를 표시합니다. 특성 구간: 1 · 4 · 7 · 10 · 13 · 16 · 20레벨.</p>
+              <section class="objective-timer" aria-labelledby="objective-timer-heading">
+                <div class="timer-heading">
+                  <h3 id="objective-timer-heading">게임 시계 · 오브젝트</h3>
+                  <span id="game-clock" class="timer-clock" aria-live="off">00:00</span>
+                </div>
+                <p id="objective-timer-status" class="timer-status" role="status" aria-live="polite"></p>
+                <p id="objective-rule-note" class="hint"></p>
+                <div class="timer-readout">
+                  <strong id="objective-countdown">다음 오브젝트 시각 미확인</strong>
+                  <span id="objective-event-state" class="subtle">대기</span>
+                </div>
+                <div class="timer-controls">
+                  <button id="clock-pause" type="button">시계 시작</button>
+                  <button id="clock-minus" type="button" aria-label="게임 시계 30초 되돌리기">−30초</button>
+                  <button id="clock-plus" type="button" aria-label="게임 시계 30초 앞으로">+30초</button>
+                </div>
+                <div class="timer-adjust">
+                  <div>
+                    <label class="field-label" for="clock-seconds">게임 시계 보정 (초)</label>
+                    <input id="clock-seconds" type="number" min="0" max="14400" step="1" inputmode="numeric" placeholder="예: 325 = 05:25">
+                  </div>
+                  <button id="clock-set" class="secondary-button" type="button">시각 적용</button>
+                </div>
+                <div class="timer-grid">
+                  <div>
+                    <label class="field-label" for="objective-time-override">다음 오브젝트 시작 시각 보정 (MM:SS)</label>
+                    <input id="objective-time-override" type="text" inputmode="numeric" placeholder="예: 05:30">
+                  </div>
+                  <div>
+                    <label class="field-label" for="previous-objective-end">이전 이벤트 종료 시각 (MM:SS)</label>
+                    <input id="previous-objective-end" type="text" inputmode="numeric" placeholder="예: 04:10">
+                  </div>
+                </div>
+                <div class="event-controls">
+                  <button id="objective-start" type="button">오브젝트 시작</button>
+                  <label class="field-label" for="objective-winner" style="margin:0">결과</label>
+                  <select id="objective-winner">
+                    <option value="unknown">미확인</option>
+                    <option value="ours">우리 팀 확보</option>
+                    <option value="enemy">상대 팀 확보</option>
+                  </select>
+                  <label class="field-label" for="objective-end-kind" style="margin:0">종료 종류</label>
+                  <select id="objective-end-kind">
+                    <option value="normal">일반 종료</option>
+                    <option value="curse">저주 종료</option>
+                  </select>
+                  <button id="objective-end" type="button">오브젝트 종료</button>
+                  <button id="objective-undo" type="button">직전 이벤트 되돌리기</button>
+                  <button id="objective-time-set" type="button">다음 시각 적용</button>
+                  <button id="previous-end-set" type="button">종료 시각 적용</button>
+                </div>
+              </section>
               <div class="level-controls">
                 <div style="grid-column:1 / -1">
                   <label class="field-label" for="objective">오브젝트 상황</label>
@@ -526,6 +591,94 @@
           "하나무라 사원": "https://static.wikia.nocookie.net/allstars_gamepedia/images/1/14/Hanamura_Temple_Loading_Screen.png/revision/latest?cb=20180821064506",
           "블랙하트 항만": "https://static.wikia.nocookie.net/allstars_gamepedia/images/a/ac/Blackheart%27s_Bay_loading_screen.jpg/revision/latest?cb=20140213200757"
         };
+        const mapObjectiveRules = {
+          "거미 여왕의 무덤": {
+            name: "거미 여왕의 보석 반납",
+            first: null,
+            repeat: { mode: "manual" },
+            note: "보석 수집·반납으로 발생하며 정해진 오브젝트 등장 시각이 없습니다."
+          },
+          "공포의 정원": {
+            name: "씨앗",
+            first: { revealAt: null, warningAt: null, startsAt: 150 },
+            repeat: { mode: "afterEndRange", normal: { min: 50, max: 80 } },
+            note: "첫 씨앗은 2:30에 생성됩니다. 이후 씨앗은 이전 씨앗 포획 0:50–1:20 후 생성됩니다."
+          },
+          "파멸의 탑": {
+            name: "제단",
+            first: { revealAt: 30, warningAt: 150, startsAt: 180 },
+            repeat: { mode: "afterEnd", seconds: 110 },
+            note: "후속 제단은 해당 세트의 마지막 제단을 확보한 뒤 110초 후 생성됩니다."
+          },
+          "불지옥 신단": {
+            name: "신단",
+            first: { revealAt: 30, warningAt: 150, startsAt: 180 },
+            repeat: { mode: "manual" },
+            repeatNoticeAfterEnd: 30,
+            note: "첫 신단은 3:00에 활성화됩니다. 후속 신단 위치는 응징자 처치 0:30 후 표시되며 실제 활성 시각은 확인해 보정하세요."
+          },
+          "브락시스 항전": {
+            name: "점령지",
+            first: { revealAt: null, warningAt: 60, startsAt: 90 },
+            repeat: { mode: "afterEnd", seconds: 130 },
+            note: "후속 점령지는 이전 저그 웨이브 처치 2:10 후 활성화됩니다."
+          },
+          "볼스카야 공장": {
+            name: "점령지",
+            first: { revealAt: null, warningAt: 150, startsAt: 180 },
+            repeat: { mode: "afterEnd", seconds: 180 },
+            note: "후속 점령지는 트리글라브 수호자 파괴 3:00 후 활성화됩니다."
+          },
+          "저주받은 골짜기": {
+            name: "공물",
+            first: { revealAt: 30, warningAt: 150, startsAt: 180 },
+            repeat: { mode: "afterEndRange", normal: { min: 50, max: 90 }, curse: { min: 120, max: 160 } },
+            note: "후속 공물은 일반적으로 0:50–1:30, 저주 종료 후에는 2:00–2:40 범위입니다."
+          },
+          "용의 둥지": {
+            name: "용기사 제단",
+            first: { revealAt: null, warningAt: 60, startsAt: 90 },
+            repeat: { mode: "afterEnd", seconds: 120 },
+            note: "후속 제단은 용기사 처치 2:00 후 다시 활성화됩니다."
+          },
+          "영원의 전쟁터": {
+            name: "불멸자",
+            first: { revealAt: null, warningAt: 150, startsAt: 180 },
+            repeat: { mode: "manual" },
+            note: "첫 전투는 3:00에 시작됩니다. 후속 시각은 확정하지 않고 직접 보정합니다."
+          },
+          "하늘 사원": {
+            name: "사원",
+            first: { revealAt: 30, warningAt: 150, startsAt: 180 },
+            repeat: { mode: "manual" },
+            note: "첫 사원은 3:00에 활성화됩니다. 후속 사원 수와 조합은 매회 달라 다음 시각을 직접 보정하세요."
+          },
+          "핵탄두 격전지": {
+            name: "핵탄두",
+            first: { revealAt: 30, warningAt: 150, startsAt: 180 },
+            repeat: { mode: "manual" },
+            repeatNoticeAfterEnd: 30,
+            note: "첫 핵탄두는 3:00에 생성됩니다. 후속 위치 표시는 이전 파동의 마지막 핵탄두 수집 0:30 후이며 다음 활성 시각은 직접 확인하세요."
+          },
+          "알터랙 고개": {
+            name: "감시탑 / 기병",
+            first: { revealAt: null, warningAt: null, startsAt: 180 },
+            repeat: { mode: "afterEndDynamic", minSeconds: 110, maxSeconds: 150, minutesFactor: 2, capMinutes: 30 },
+            note: "첫 감옥은 3:00에 생성됩니다. 후속 감옥은 이전 기병 전멸 후 경과한 게임 시간에 따라 1:50–2:30에서 분당 2초씩 짧아지는 범위로 생성됩니다."
+          },
+          "하나무라 사원": {
+            name: "화물",
+            first: null,
+            repeat: { mode: "manual" },
+            note: "화물은 진행·호위 상태에 따라 움직이는 목표이며 고정 재등장 타이머가 없습니다."
+          },
+          "블랙하트 항만": {
+            name: "금화 반납",
+            first: null,
+            repeat: { mode: "manual" },
+            note: "금화 수집·반납으로 발생하며 고정 오브젝트 타이머가 없습니다."
+          }
+        };
         const mapHeroAdvice = {
           "거미 여왕의 무덤": {
             focus: "짧은 라인 간 이동과 보석 반납을 두고 교전이 자주 일어납니다.",
@@ -606,7 +759,11 @@
             team, Array.from({ length: 5 }, () => ({ hero: "", alive: true, respawn: null, ultimate: "unknown" }))
           ])),
           oursLevel: null, enemyLevel: null, objective: "unknown", objectiveSeconds: null,
-          campStatus: "unknown", laneTrade: "unknown", fightResult: "unknown"
+          campStatus: "unknown", laneTrade: "unknown", fightResult: "unknown",
+          gameClockSeconds: 0, gameClockStartedAt: null,
+          objectiveEventStatus: "waiting", objectiveEventStartedAt: null,
+          lastObjectiveEndedAt: null, objectiveSecuredBy: "unknown",
+          objectiveEndKind: "normal", nextObjectiveAtOverride: null, objectiveHistory: []
         });
         const saveState = document.querySelector("#save-state");
         const heroDialog = document.querySelector("#hero-dialog");
@@ -618,6 +775,8 @@
           const fresh = defaultState();
           if (!value || typeof value !== "object") return fresh;
           const hasTimingData = Object.prototype.hasOwnProperty.call(value, "objectiveSeconds");
+          const hasObjectiveTimerState = Object.prototype.hasOwnProperty.call(value, "gameClockSeconds")
+            || Object.prototype.hasOwnProperty.call(value, "nextObjectiveAtOverride");
           if (value.phase === "game") fresh.phase = "game";
           if (typeof value.map === "string") fresh.map = value.map;
           if (value.draftOrder === "first" || value.draftOrder === "second") fresh.draftOrder = value.draftOrder;
@@ -656,6 +815,36 @@
           if (Number.isInteger(value.objectiveSeconds) && value.objectiveSeconds >= 0 && value.objectiveSeconds <= 600) {
             fresh.objectiveSeconds = value.objectiveSeconds;
           }
+          if (Number.isInteger(value.gameClockSeconds) && value.gameClockSeconds >= 0 && value.gameClockSeconds <= 86400) {
+            fresh.gameClockSeconds = value.gameClockSeconds;
+          }
+          if (Number.isSafeInteger(value.gameClockStartedAt) && value.gameClockStartedAt > 0 && value.gameClockStartedAt <= Date.now()) {
+            fresh.gameClockStartedAt = value.gameClockStartedAt;
+          }
+          if (["waiting", "active", "ended"].includes(value.objectiveEventStatus)) fresh.objectiveEventStatus = value.objectiveEventStatus;
+          for (const key of ["objectiveEventStartedAt", "lastObjectiveEndedAt", "nextObjectiveAtOverride"]) {
+            if (Number.isInteger(value[key]) && value[key] >= 0 && value[key] <= 86400) fresh[key] = value[key];
+          }
+          if (["unknown", "ours", "enemy"].includes(value.objectiveSecuredBy)) fresh.objectiveSecuredBy = value.objectiveSecuredBy;
+          if (["normal", "curse"].includes(value.objectiveEndKind)) fresh.objectiveEndKind = value.objectiveEndKind;
+          if (Array.isArray(value.objectiveHistory)) {
+            fresh.objectiveHistory = value.objectiveHistory.slice(-10).flatMap((entry) => {
+              if (!entry || !["waiting", "active", "ended"].includes(entry.status)) return [];
+              return [{
+                status: entry.status,
+                objective: ["unknown", "soon", "ours", "contested", "enemy", "secured"].includes(entry.objective) ? entry.objective : "unknown",
+                startedAt: Number.isInteger(entry.startedAt) && entry.startedAt >= 0 && entry.startedAt <= 86400 ? entry.startedAt : null,
+                endedAt: Number.isInteger(entry.endedAt) && entry.endedAt >= 0 && entry.endedAt <= 86400 ? entry.endedAt : null,
+                objectiveSeconds: Number.isInteger(entry.objectiveSeconds) && entry.objectiveSeconds >= 0 && entry.objectiveSeconds <= 600 ? entry.objectiveSeconds : null,
+                securedBy: ["unknown", "ours", "enemy"].includes(entry.securedBy) ? entry.securedBy : "unknown",
+                endKind: ["normal", "curse"].includes(entry.endKind) ? entry.endKind : "normal",
+                nextAtOverride: Number.isInteger(entry.nextAtOverride) && entry.nextAtOverride >= 0 && entry.nextAtOverride <= 86400 ? entry.nextAtOverride : null
+              }];
+            });
+          }
+          if (!hasObjectiveTimerState && Number.isInteger(fresh.objectiveSeconds)) {
+            fresh.nextObjectiveAtOverride = fresh.gameClockSeconds + fresh.objectiveSeconds;
+          }
           return fresh;
         }
 
@@ -685,6 +874,245 @@
             saveState.textContent = "저장 실패 · 브라우저 설정 확인";
             saveState.classList.add("error");
           }
+        }
+
+        function gameTimeSeconds() {
+          const elapsed = state.gameClockStartedAt
+            ? Math.floor((Date.now() - state.gameClockStartedAt) / 1000)
+            : 0;
+          return Math.max(0, Math.min(86400, state.gameClockSeconds + elapsed));
+        }
+
+        function formatGameTime(seconds) {
+          const safeSeconds = Math.max(0, Math.floor(seconds));
+          const minutes = Math.floor(safeSeconds / 60);
+          return `${String(minutes).padStart(2, "0")}:${String(safeSeconds % 60).padStart(2, "0")}`;
+        }
+
+        function parseGameTime(value) {
+          const input = value.trim();
+          if (!input) return null;
+          if (/^\d{1,4}:\d{2}$/.test(input)) {
+            const [minutes, seconds] = input.split(":").map(Number);
+            if (seconds > 59) return null;
+            return minutes * 60 + seconds;
+          }
+          if (/^\d{1,5}$/.test(input)) return Number(input);
+          return null;
+        }
+
+        function objectiveSchedule() {
+          const now = gameTimeSeconds();
+          if (Number.isInteger(state.nextObjectiveAtOverride)) {
+            return { minAt: state.nextObjectiveAtOverride, maxAt: state.nextObjectiveAtOverride, source: "직접 보정" };
+          }
+          const rule = mapObjectiveRules[state.map];
+          if (!rule) return null;
+          if (Number.isInteger(state.lastObjectiveEndedAt)) {
+            if (rule.repeat.mode === "fixed" && Number.isInteger(rule.repeat.intervalSeconds) && rule.repeat.intervalSeconds > 0) {
+              const firstAt = rule.first?.startsAt;
+              if (!Number.isInteger(firstAt)) return null;
+              const cycle = Math.max(1, Math.floor((now - firstAt) / rule.repeat.intervalSeconds) + 1);
+              const target = firstAt + cycle * rule.repeat.intervalSeconds;
+              return { minAt: target, maxAt: target, source: "게임 시작 기준 고정 주기" };
+            }
+            if (rule.repeat.mode === "afterEnd") {
+              const target = state.lastObjectiveEndedAt + rule.repeat.seconds;
+              return { minAt: target, maxAt: target, source: "이전 이벤트 종료 기준" };
+            }
+            if (rule.repeat.mode === "afterEndRange") {
+              const interval = rule.repeat[state.objectiveEndKind] || rule.repeat.normal;
+              return {
+                minAt: state.lastObjectiveEndedAt + interval.min,
+                maxAt: state.lastObjectiveEndedAt + interval.max,
+                source: "이전 이벤트 종료 기준 · 범위"
+              };
+            }
+            if (rule.repeat.mode === "afterEndDynamic") {
+              const elapsedMinutes = Math.min(rule.repeat.capMinutes, Math.floor(state.lastObjectiveEndedAt / 60));
+              const elapsedAdjustment = elapsedMinutes * rule.repeat.minutesFactor;
+              return {
+                minAt: state.lastObjectiveEndedAt + Math.max(1, rule.repeat.minSeconds - elapsedAdjustment),
+                maxAt: state.lastObjectiveEndedAt + Math.max(1, rule.repeat.maxSeconds - elapsedAdjustment),
+                source: "이전 이벤트 종료 기준 · 게임 시간 연동 범위"
+              };
+            }
+            return null;
+          }
+          if (!rule.first || !Number.isInteger(rule.first.startsAt)) return null;
+          return { minAt: rule.first.startsAt, maxAt: rule.first.startsAt, source: "맵 첫 오브젝트 규칙" };
+        }
+
+        function objectiveTimer() {
+          const now = gameTimeSeconds();
+          if (state.objectiveEventStatus === "active") {
+            return { phase: "active", minRemaining: 0, maxRemaining: 0, schedule: null };
+          }
+          const schedule = objectiveSchedule();
+          if (schedule) {
+            return {
+              phase: state.objectiveEventStatus === "ended" ? "ended" : "waiting",
+              minRemaining: Math.max(0, schedule.minAt - now),
+              maxRemaining: Math.max(0, schedule.maxAt - now),
+              schedule
+            };
+          }
+          if (Number.isInteger(state.objectiveSeconds)) {
+            return {
+              phase: state.objectiveEventStatus === "ended" ? "ended" : "waiting",
+              minRemaining: state.objectiveSeconds,
+              maxRemaining: state.objectiveSeconds,
+              schedule: null,
+              manual: true
+            };
+          }
+          return { phase: state.objectiveEventStatus, minRemaining: null, maxRemaining: null, schedule: null };
+        }
+
+        function renderObjectiveTimer() {
+          const now = gameTimeSeconds();
+          const timer = objectiveTimer();
+          const rangeKnown = Number.isInteger(timer.minRemaining)
+            && Number.isInteger(timer.maxRemaining)
+            && timer.maxRemaining !== timer.minRemaining;
+          const rule = mapObjectiveRules[state.map];
+          document.querySelector("#game-clock").textContent = formatGameTime(now);
+          document.querySelector("#clock-pause").textContent = state.gameClockStartedAt ? "시계 일시정지" : "시계 시작 / 재개";
+          const firstTimeNote = rule?.first
+            ? ` 첫 목표: ${[
+              Number.isInteger(rule.first.revealAt) ? `위치 표시 ${formatGameTime(rule.first.revealAt)}` : "",
+              Number.isInteger(rule.first.warningAt) ? `예고 ${formatGameTime(rule.first.warningAt)}` : "",
+              Number.isInteger(rule.first.startsAt) ? `활성 ${formatGameTime(rule.first.startsAt)}` : "활성 시각 미확인"
+            ].filter(Boolean).join(" · ")}.`
+            : "";
+          document.querySelector("#objective-rule-note").textContent = rule
+            ? `${rule.name} · ${rule.note}${firstTimeNote}`
+            : "전장을 선택하면 확인된 맵 규칙을 사용합니다. 확인되지 않은 규칙은 직접 입력해 주세요.";
+          const stateLabel = timer.phase === "active"
+            ? "진행"
+            : state.objectiveEventStatus === "ended"
+              ? "종료"
+              : timer.minRemaining !== null && timer.minRemaining <= 90 ? "준비" : "대기";
+          document.querySelector("#objective-event-state").textContent = stateLabel;
+          let statusText = "맵 규칙 또는 게임 내 표시를 기준으로 타이머를 보정하세요.";
+          if (timer.phase === "active") {
+            statusText = `오브젝트 진행 중 · 시작 ${formatGameTime(state.objectiveEventStartedAt ?? now)}`;
+          } else if (timer.minRemaining !== null) {
+            if (timer.minRemaining === 0 && timer.maxRemaining === 0) {
+              statusText = "예정 시각이 지났습니다. 실제로 시작됐다면 시작 버튼을 눌러 상태를 맞추세요.";
+            } else if (timer.minRemaining === 0) {
+              statusText = "맵 규칙의 등장 범위에 진입했습니다. 실제 시작 시각은 게임 내 표시로 확인하세요.";
+            } else if (rangeKnown && timer.minRemaining <= 30 && timer.maxRemaining > 30) {
+              statusText = "등장 가능 범위가 가까워졌습니다. 지금 합류 준비를 시작하되 실제 활성 시각은 게임 내 표시를 확인하세요.";
+            } else if (rangeKnown && timer.minRemaining <= 60 && timer.maxRemaining > 60) {
+              statusText = "오브젝트 등장 범위가 60초 준비 구간에 걸쳐 있습니다. 긴 캠프·라인 교환은 피하고 합류를 준비하세요.";
+            } else if (rangeKnown && timer.minRemaining < 90 && timer.maxRemaining > 90) {
+              statusText = "오브젝트 등장 범위가 90초 기준을 넘나듭니다. 라인을 정리하며 캠프를 계획하고 게임 내 신호를 확인하세요.";
+            } else if (timer.minRemaining <= 30 && timer.maxRemaining <= 30) {
+              statusText = "30초 이내 · 합류와 자리 선점을 준비하세요.";
+            } else if (timer.minRemaining <= 60) {
+              statusText = "30–60초 · 체력·마나와 합류 상태를 점검하세요.";
+            } else if (timer.minRemaining < 90) {
+              statusText = "60–90초 · 라인 정리와 캠프 동선을 준비하세요.";
+            } else {
+              statusText = "90초 이상 · 경험치, 캠프, 다음 특성 단계를 관리하세요.";
+            }
+          } else if (rule?.repeatNoticeAfterEnd && Number.isInteger(state.lastObjectiveEndedAt)) {
+            statusText = "다음 목표 위치가 곧 표시되지만, 실제 활성 시각은 고정되지 않아 게임 내 표시를 확인하세요.";
+          } else if (rule?.first === null && !Number.isInteger(state.nextObjectiveAtOverride)) {
+            statusText = "이 맵에는 고정 등장 시각이 없거나 확인되지 않았습니다. 게임 내 목표 시각을 직접 입력하세요.";
+          }
+          document.querySelector("#objective-timer-status").textContent = statusText;
+          const countdown = document.querySelector("#objective-countdown");
+          if (timer.phase === "active") {
+            countdown.textContent = "오브젝트 진행 중";
+          } else if (timer.schedule) {
+            const first = formatGameTime(timer.schedule.minAt);
+            const last = formatGameTime(timer.schedule.maxAt);
+            const time = timer.schedule.minAt === timer.schedule.maxAt ? first : `${first}–${last}`;
+            const remaining = timer.minRemaining === timer.maxRemaining
+              ? `${timer.minRemaining}초 남음`
+              : `${timer.minRemaining}–${timer.maxRemaining}초 범위`;
+            countdown.textContent = `다음 시작 ${time} · ${remaining} · ${timer.schedule.source}`;
+          } else if (timer.manual) {
+            countdown.textContent = `수동 타이머 · ${timer.minRemaining}초 남음`;
+          } else if (rule?.repeatNoticeAfterEnd && Number.isInteger(state.lastObjectiveEndedAt)) {
+            countdown.textContent = `다음 목표 위치 표시 ${formatGameTime(state.lastObjectiveEndedAt + rule.repeatNoticeAfterEnd)} · 활성 시각은 직접 확인`;
+          } else {
+            countdown.textContent = "다음 오브젝트 시각 미확인";
+          }
+          const clockInput = document.querySelector("#clock-seconds");
+          if (document.activeElement !== clockInput) clockInput.value = String(now);
+          const remainingInput = document.querySelector("#objective-seconds");
+          if (document.activeElement !== remainingInput) {
+            remainingInput.value = timer.phase === "active" ? "0" : timer.minRemaining ?? "";
+          }
+          const nextTimeInput = document.querySelector("#objective-time-override");
+          if (document.activeElement !== nextTimeInput) {
+            nextTimeInput.value = Number.isInteger(state.nextObjectiveAtOverride)
+              ? formatGameTime(state.nextObjectiveAtOverride)
+              : "";
+          }
+          const previousEndInput = document.querySelector("#previous-objective-end");
+          if (document.activeElement !== previousEndInput) {
+            previousEndInput.value = Number.isInteger(state.lastObjectiveEndedAt)
+              ? formatGameTime(state.lastObjectiveEndedAt)
+              : "";
+          }
+          document.querySelector("#objective-winner").value = state.objectiveSecuredBy;
+          document.querySelector("#objective-end-kind").value = state.objectiveEndKind;
+          document.querySelector("#objective-end-kind").disabled = state.map !== "저주받은 골짜기";
+          document.querySelector("#objective-undo").disabled = state.objectiveHistory.length === 0;
+        }
+
+        function saveObjectiveHistory() {
+          state.objectiveHistory.push({
+            status: state.objectiveEventStatus,
+            objective: state.objective,
+            startedAt: state.objectiveEventStartedAt,
+            endedAt: state.lastObjectiveEndedAt,
+            objectiveSeconds: state.objectiveSeconds,
+            securedBy: state.objectiveSecuredBy,
+            endKind: state.objectiveEndKind,
+            nextAtOverride: state.nextObjectiveAtOverride
+          });
+          state.objectiveHistory = state.objectiveHistory.slice(-10);
+        }
+
+        function startObjectiveEvent() {
+          saveObjectiveHistory();
+          state.objectiveEventStatus = "active";
+          state.objectiveEventStartedAt = gameTimeSeconds();
+          state.objectiveSecuredBy = "unknown";
+          state.objectiveSeconds = null;
+          state.nextObjectiveAtOverride = null;
+          state.objective = "contested";
+        }
+
+        function endObjectiveEvent(securedBy, endKind) {
+          saveObjectiveHistory();
+          state.objectiveEventStatus = "ended";
+          state.lastObjectiveEndedAt = gameTimeSeconds();
+          state.objectiveSecuredBy = securedBy;
+          state.objectiveEndKind = endKind;
+          state.objectiveSeconds = null;
+          state.nextObjectiveAtOverride = null;
+          const rule = mapObjectiveRules[state.map];
+          state.objective = rule && rule.repeat.mode !== "manual" ? "soon" : "unknown";
+        }
+
+        function undoObjectiveEvent() {
+          const previous = state.objectiveHistory.pop();
+          if (!previous) return false;
+          state.objectiveEventStatus = previous.status;
+          state.objective = previous.objective;
+          state.objectiveEventStartedAt = previous.startedAt;
+          state.lastObjectiveEndedAt = previous.endedAt;
+          state.objectiveSeconds = previous.objectiveSeconds;
+          state.objectiveSecuredBy = previous.securedBy;
+          state.objectiveEndKind = previous.endKind;
+          state.nextObjectiveAtOverride = previous.nextAtOverride;
+          return true;
         }
 
         function allUsed(exceptKey, exceptIndex) {
@@ -936,8 +1364,19 @@
             unknown: "미확인", soon: "곧 생성", ours: "우리 팀 진행 중",
             contested: "경합 중", enemy: "상대 팀 진행 중", secured: "확보 완료"
           };
-          const objectiveActive = ["soon", "ours", "contested", "enemy"].includes(state.objective);
-          const rallyTimingKnown = objectiveActive && Number.isInteger(state.objectiveSeconds);
+          const timer = objectiveTimer();
+          const objectiveSeconds = timer.minRemaining;
+          const objectiveRangeKnown = Number.isInteger(timer.maxRemaining)
+            && Number.isInteger(objectiveSeconds)
+            && timer.maxRemaining !== objectiveSeconds;
+          const objectiveTimeText = objectiveRangeKnown
+            ? `${objectiveSeconds}–${timer.maxRemaining}초 범위`
+            : Number.isInteger(objectiveSeconds) ? `${objectiveSeconds}초` : "미확인";
+          const objectiveActive = timer.phase === "active"
+            || Boolean(timer.schedule)
+            || Boolean(timer.manual)
+            || ["soon", "ours", "contested", "enemy"].includes(state.objective);
+          const rallyTimingKnown = objectiveActive && Number.isInteger(objectiveSeconds);
           const missingHeroes = ["ours", "enemy"].some((team) =>
             state.battle[team].some((member, index) => !(pickedHero(team, index) || member.hero))
           );
@@ -948,12 +1387,13 @@
             const knownDead = members.filter((member, index) =>
               (pickedHero(team, index) || member.hero) && !member.alive
             );
-            const revived = knownDead.filter((member) => Number.isInteger(member.respawn) && member.respawn <= state.objectiveSeconds).length;
+            const definitelyRevived = knownDead.filter((member) => Number.isInteger(member.respawn) && member.respawn <= objectiveSeconds).length;
+            const possiblyRevived = knownDead.filter((member) => Number.isInteger(member.respawn) && member.respawn <= timer.maxRemaining).length;
             const unknownDead = knownDead.filter((member) => !Number.isInteger(member.respawn)).length;
-            const confirmed = survival.confirmedAlive + revived;
+            const confirmed = survival.confirmedAlive + definitelyRevived;
             return {
               confirmed,
-              maximum: confirmed + unknownDead + survival.unknownHeroes,
+              maximum: survival.confirmedAlive + possiblyRevived + unknownDead + survival.unknownHeroes,
               unknownDead,
               unknownHeroes: survival.unknownHeroes
             };
@@ -972,13 +1412,22 @@
           const inferredFightResult = state.fightResult !== "unknown"
             ? state.fightResult
             : enemyDead - oursDead >= 2 ? "won" : oursDead - enemyDead >= 2 ? "lost" : "unknown";
-          const objectiveIsNear = objectiveActive && Number.isInteger(state.objectiveSeconds) && state.objectiveSeconds <= 45;
-          const objectiveIsFar = objectiveActive && Number.isInteger(state.objectiveSeconds) && state.objectiveSeconds >= 90;
+          const objectiveIsNear = objectiveActive && Number.isInteger(objectiveSeconds)
+            && objectiveSeconds <= 30 && (!objectiveRangeKnown || timer.maxRemaining <= 30);
+          const objectiveRangePreparation = objectiveActive && objectiveRangeKnown
+            && ((objectiveSeconds <= 30 && timer.maxRemaining > 30)
+              || (objectiveSeconds <= 60 && timer.maxRemaining > 60)
+              || (objectiveSeconds < 90 && timer.maxRemaining > 90));
+          const objectiveIsPreparation = objectiveActive && Number.isInteger(objectiveSeconds)
+            && objectiveSeconds > 30 && objectiveSeconds <= 60 && (!objectiveRangeKnown || timer.maxRemaining <= 60);
+          const objectiveIsSetup = objectiveActive && Number.isInteger(objectiveSeconds)
+            && objectiveSeconds > 60 && objectiveSeconds < 90 && (!objectiveRangeKnown || timer.maxRemaining <= 90);
+          const objectiveIsFar = objectiveActive && Number.isInteger(objectiveSeconds) && objectiveSeconds >= 90;
           const ultimateSummary = (team) => state.battle[team].reduce((summary, member, index) => {
             const hero = pickedHero(team, index) || member.hero;
             if (!hero) return summary;
             const impact = ultimateImpact[hero];
-            const canAttend = member.alive || (rallyTimingKnown && Number.isInteger(member.respawn) && member.respawn <= state.objectiveSeconds);
+            const canAttend = member.alive || (rallyTimingKnown && Number.isInteger(member.respawn) && member.respawn <= objectiveSeconds);
             if (!impact) summary.unrated += 1;
             if (member.ultimate === "unknown") summary.unknown += 1;
             if (member.ultimate === "ready" && impact && canAttend) summary.readyImpact += impact;
@@ -992,7 +1441,8 @@
           if (missingHeroes) missingInfo.push("영웅 밴픽");
           if (!levelsKnown) missingInfo.push("양 팀 레벨");
           if (state.objective === "unknown") missingInfo.push("오브젝트 상황");
-          if (objectiveActive && !Number.isInteger(state.objectiveSeconds)) missingInfo.push("오브젝트까지 남은 시간");
+          if (objectiveActive && !Number.isInteger(objectiveSeconds)) missingInfo.push("오브젝트까지 남은 시간");
+          if (objectiveRangeKnown) missingInfo.push("맵 규칙상 오브젝트 시각 범위");
           if (rallyTimingKnown && (oursRally.unknownDead || enemyRally.unknownDead)) missingInfo.push("사망 영웅 부활 시간");
           if (oursUltimates.unknown || enemyUltimates.unknown) missingInfo.push("궁극기 상태");
           if (oursUltimates.unrated || enemyUltimates.unrated) missingInfo.push("일부 영웅의 궁극기 영향도 데이터");
@@ -1002,7 +1452,7 @@
             : "";
           const lines = [
             `확정 생존: 우리 팀 ${oursAlive}/5${oursSurvival.unknownHeroes ? ` (+${oursSurvival.unknownHeroes}명 미확인)` : ""} · 상대 ${enemyAlive}/5${enemySurvival.unknownHeroes ? ` (+${enemySurvival.unknownHeroes}명 미확인)` : ""}`,
-            `오브젝트: ${objectiveLabels[state.objective]}${rallyTimingKnown ? ` · ${state.objectiveSeconds}초 후` : ""}`
+            `오브젝트: ${timer.phase === "active" ? "진행 중" : objectiveLabels[state.objective]}${rallyTimingKnown ? ` · ${objectiveRangeKnown ? `${objectiveSeconds}–${timer.maxRemaining}초 범위` : `${objectiveSeconds}초 후`}` : ""}`
           ];
           if (oursDead || enemyDead) {
             const fightLabel = { won: "아군 우세 추정", lost: "아군 열세 추정", even: "큰 피해 없는 교전", unknown: "결과 미확인" }[inferredFightResult];
@@ -1072,7 +1522,7 @@
                 : "교전·라인 운영";
             const executionCondition = guidance.executionCondition || (
               action.includes("오브젝트")
-                ? `오브젝트까지 ${Number.isInteger(state.objectiveSeconds) ? `${state.objectiveSeconds}초` : "남은 시간 미확인"}. 부활 시간과 예상 합류 인원을 확인한 뒤 이동하세요. 영웅 위치·이동 거리는 반영되지 않았습니다.`
+                ? `오브젝트까지 ${objectiveTimeText} 남았습니다. 부활 시간과 예상 합류 인원을 확인한 뒤 이동하세요. 영웅 위치·이동 거리는 반영되지 않았습니다.`
                 : action.includes("캠프")
                   ? "가까운 캠프가 안전하게 점령 가능하고, 최소 3명의 확정 생존 아군이 함께할 때 시작하세요. 적 위치가 보이지 않으면 중단하세요."
                   : action.includes("구조물")
@@ -1124,9 +1574,37 @@
             return null;
           };
 
-          // Priority: immediate survival, decisive objective timing, post-fight trade, then talent and ultimate context.
+          // Priority: survival, active event, post-event conversion, objective timing, then fight and talent context.
           if (oursPossibleAlive <= 2 && oursPossibleAlive < enemyAlive) {
             return set("후퇴해 시간을 버세요", "우리 팀 생존 인원이 적어 정면 교전에서 수적 열세입니다.", "아군이 다시 합류할 때까지 오브젝트 경합과 깊은 진입을 피하세요.");
+          }
+          if (timer.phase === "active") {
+            if (state.objective === "enemy") {
+              if (oursAlive > enemyPossibleAlive && !levelDisadvantage) {
+                return set("합류 경로와 인원 우위를 확인한 뒤 재진입하세요", "상대 팀이 오브젝트를 진행 중이며 현재 확인된 생존·특성 조건에서 재진입 여지가 있습니다. 진행도와 상대 위치는 확인되지 않았습니다.");
+              }
+              const trade = safeTrade("상대가 오브젝트를 진행 중이고 즉시 진입 우위가 확인되지 않아");
+              if (trade) return trade;
+              return set("무리한 진입을 피하고 다음 합류를 준비하세요", "상대 오브젝트 진행 중입니다. 생존 인원·레벨 우위가 확인되지 않아 정면 진입을 확정적으로 권하기 어렵습니다.");
+            }
+            if (state.objective === "ours") {
+              return set("팀을 지키며 오브젝트 진행을 마무리하세요", "우리 팀이 오브젝트를 진행 중입니다. 진행도가 입력되지 않았으므로 목표가 끝날 때까지 생존 인원과 적 진입을 확인하세요.", "인원 열세가 되거나 목표 진척이 멈추면 무리한 지속 대신 후퇴 후 재진입을 판단하세요.");
+            }
+            if (oursAlive < enemyAlive || levelDisadvantage) {
+              return set("불리한 진입을 끊고 생존 인원과 재정비하세요", "오브젝트가 진행 중이지만 현재 생존 인원 또는 특성 구간에서 열세입니다. 진행도와 적 위치는 입력되지 않아 지속 교전이 유리하다고 판단할 수 없습니다.", "아군이 합류하거나 수적·특성 조건이 개선될 때만 다시 진입하세요.");
+            }
+            return set("팀과 함께 오브젝트 진행을 이어가세요", "오브젝트 진행 중으로 입력됐습니다. 확정된 생존 인원과 특성 차이를 확인하며 목표를 마무리하세요.", "오브젝트 진행도, 체력·마나, 상대 위치를 확인하지 못하므로 불리해지면 중단하고 재진입 각을 다시 보세요.");
+          }
+          if (state.objectiveEventStatus === "ended" && (objectiveSeconds === null || objectiveSeconds > 90)) {
+            if (state.objectiveSecuredBy === "ours") {
+              const trade = safeTrade("오브젝트 확보 직후 다음 생성까지 시간이 남아 있어");
+              if (trade) return trade;
+              return set("다음 라인을 정리하고 구조물 압박 기회를 보세요", "우리 팀이 오브젝트를 확보했습니다. 다음 목표 시각은 알려진 맵 규칙 또는 직접 입력한 종료 시각을 기준으로 계산합니다.", "남은 시간이 불명확하면 깊은 압박보다 라인 정리와 안전한 재정비를 우선하세요.");
+            }
+            if (state.objectiveSecuredBy === "enemy") {
+              return set("밀린 라인을 정리하고 다음 목표를 준비하세요", "상대 팀이 이번 오브젝트를 확보했다고 입력했습니다. 즉시 되찾으려 무리하기보다 생존과 다음 타이밍을 준비하세요.");
+            }
+            return set("오브젝트 결과를 확인하고 라인을 정리하세요", "이벤트 종료는 입력됐지만 확보 팀이 확인되지 않았습니다. 지도 압박이나 후퇴를 확정하기 전에 결과를 확인하세요.");
           }
           if (objectiveActive && largeRallyDisadvantage && ["contested", "enemy", "soon"].includes(state.objective)) {
             return set("이번 오브젝트 정면 경합은 피하세요", `오브젝트 시 우리 팀은 최대 ${oursRally.maximum}명, 상대는 최소 ${enemyRally.confirmed}명이 합류할 수 있어 불리합니다.`, "사망한 아군의 부활 시간을 확인하고, 합류가 늦으면 라인·구조물 교환을 우선하세요.");
@@ -1167,22 +1645,30 @@
           if (state.objective === "soon") {
             if (objectiveIsFar && (killAdvantage || inferredFightResult === "won")) {
               const context = killAdvantage
-                ? `상대 ${enemyDead}명이 우리 ${oursDead}명보다 더 많이 사망했고 오브젝트까지 ${state.objectiveSeconds}초 남아 있어`
-                : `아군이 한타에서 이겼고 오브젝트까지 ${state.objectiveSeconds}초 남아 있어`;
+                ? `상대 ${enemyDead}명이 우리 ${oursDead}명보다 더 많이 사망했고 오브젝트까지 ${objectiveTimeText} 남아 있어`
+                : `아군이 한타에서 이겼고 오브젝트까지 ${objectiveTimeText} 남아 있어`;
               const trade = safeTrade(context);
               if (trade) {
-                trade.executionCondition = `오브젝트는 ${state.objectiveSeconds}초 후입니다. 캠프·라인 교환을 짧게 마치고, 남은 시간이 45초가 되기 전 합류를 시작하세요. 실제 이동 시간과 위치는 알 수 없으므로 더 일찍 복귀할 수 있습니다.`;
+                trade.executionCondition = `오브젝트까지 ${objectiveTimeText} 남았습니다. 캠프·라인 교환은 짧게 끝내고 60초 전에는 합류 준비를 시작하세요. 실제 이동 시간과 위치는 알 수 없으므로 더 일찍 복귀할 수 있습니다.`;
                 return trade;
               }
             }
-            if (objectiveIsNear) {
-              return set("지금 팀과 합류해 오브젝트 진입을 준비하세요", `오브젝트까지 ${state.objectiveSeconds}초 남았습니다. 부활 후 예상 합류 인원과 진입 경로를 확인한 뒤 함께 움직이세요.`);
+            if (objectiveRangePreparation) {
+              return set("등장 가능 범위에 맞춰 팀 합류를 준비하세요", `맵 규칙상 오브젝트까지 ${objectiveTimeText} 범위입니다. 빠른 시점 기준으로는 임박했지만 정확한 활성 시각은 알 수 없습니다.`, "확정 시각으로 가정해 캠프나 라인 교환을 계속하지 말고 게임 내 신호를 확인하세요.");
             }
-            return set("예상 합류 인원을 확인해 미리 모이세요", isEarlyGame
-              ? "오브젝트 생성 전 합류 위치를 확인하되, 초반 라인 경험치를 오래 비우지 않도록 팀 이동 타이밍을 맞추세요."
-              : isLateGame
-                ? "후반 오브젝트 전에 전원을 모으고 진입 경로를 정리하세요. 한 명의 이탈이 목표 확보에 큰 공백을 만들 수 있습니다."
-                : "오브젝트가 곧 생성됩니다. 미리 합류하면 단독으로 늦게 진입하는 위험을 줄일 수 있습니다.");
+            if (objectiveIsNear) {
+              if (oursRally && enemyRally && oursRally.maximum < enemyRally.confirmed) {
+                return set("무리한 정면 합류를 피하고 안전한 교환을 선택하세요", `오브젝트까지 ${objectiveTimeText} 남았지만 예상 합류 인원이 우리 ${oursRally.confirmed}-${oursRally.maximum}명, 상대 ${enemyRally.confirmed}-${enemyRally.maximum}명으로 불리할 수 있습니다.`);
+              }
+              return set("지금 팀과 합류해 오브젝트 자리를 준비하세요", `오브젝트까지 ${objectiveTimeText} 남았습니다. 부활 후 예상 합류 인원과 진입 경로를 확인하고, 위치·이동 시간은 별도로 판단하세요.`);
+            }
+            if (objectiveIsPreparation) {
+              return set("캠프를 확인하고 체력·마나를 관리하며 합류하세요", `오브젝트까지 ${objectiveTimeText} 남았습니다. 안전한 캠프 기회와 귀환 필요성을 확인하고, 늦어도 30초 전에는 팀 합류를 우선하세요.`);
+            }
+            if (objectiveIsSetup || (objectiveSeconds > 60 && objectiveSeconds < 90)) {
+              return set("라인을 정리하고 캠프 동선을 계획하세요", `오브젝트까지 ${objectiveTimeText} 남았습니다. 현재 레벨과 다음 특성 구간을 확인하고, 캠프를 시작할지 팀 위치를 확인한 뒤 결정하세요.`);
+            }
+            return set("라인 경험치를 확보하고 다음 캠프를 준비하세요", `오브젝트까지 ${objectiveTimeText} 남았습니다. 90초 이상 여유가 있으므로 다음 특성 구간과 캠프 타이밍을 관리하되, 90초 기준은 준비용 참고치입니다.`);
           }
           if (state.objective === "secured") {
             if (killAdvantage) {
@@ -1220,8 +1706,8 @@
           }
           if (objectiveIsFar && (killAdvantage || inferredFightResult === "won")) {
             const context = killAdvantage
-              ? `한타 이후 상대 ${enemyDead}명이 우리 ${oursDead}명보다 더 많이 사망했고 오브젝트까지 ${state.objectiveSeconds}초 남아 있어`
-              : `아군이 한타에서 이겼다고 입력했고 오브젝트까지 ${state.objectiveSeconds}초 남아 있어`;
+              ? `한타 이후 상대 ${enemyDead}명이 우리 ${oursDead}명보다 더 많이 사망했고 오브젝트까지 ${objectiveTimeText} 남아 있어`
+              : `아군이 한타에서 이겼다고 입력했고 오브젝트까지 ${objectiveTimeText} 남아 있어`;
             const trade = safeTrade(context);
             if (trade) {
               trade.executionCondition = `캠프 또는 라인 교환을 짧게 수행하고, 오브젝트까지 45초가 남기 전에 합류를 시작하세요. 위치와 이동 시간은 입력되지 않아 여유 시간을 보장할 수 없습니다.`;
@@ -1346,7 +1832,7 @@
           const order = document.querySelector(`input[name="draft-order"][value="${state.draftOrder}"]`);
           if (order) order.checked = true;
           document.querySelector("#objective").value = state.objective;
-          document.querySelector("#objective-seconds").value = state.objectiveSeconds ?? "";
+          renderObjectiveTimer();
           document.querySelector("#camp-status").value = state.campStatus;
           document.querySelector("#lane-trade").value = state.laneTrade;
           document.querySelector("#fight-result").value = state.fightResult;
@@ -1366,8 +1852,21 @@
         render();
         document.querySelector("#map").addEventListener("change", (event) => {
           state.map = event.target.value;
+          state.gameClockSeconds = 0;
+          state.gameClockStartedAt = null;
+          state.objective = "unknown";
+          state.objectiveSeconds = null;
+          state.objectiveEventStatus = "waiting";
+          state.objectiveEventStartedAt = null;
+          state.lastObjectiveEndedAt = null;
+          state.objectiveSecuredBy = "unknown";
+          state.objectiveEndKind = "normal";
+          state.nextObjectiveAtOverride = null;
+          state.objectiveHistory = [];
           updateMapBackground();
           renderMapAdvice();
+          renderObjectiveTimer();
+          updateRecommendation();
           document.querySelector("#draft-status").textContent = draftProgress();
           document.querySelector("#match-summary").textContent =
             `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "밴픽 순서 미선택"}`;
@@ -1394,6 +1893,17 @@
         heroDialog.addEventListener("close", () => { activeSlot = null; });
         document.querySelector("#start-match").addEventListener("click", () => {
           state.phase = "game";
+          state.gameClockSeconds = 0;
+          state.gameClockStartedAt = Date.now();
+          state.objective = mapObjectiveRules[state.map]?.first?.startsAt ? "soon" : "unknown";
+          state.objectiveSeconds = null;
+          state.objectiveEventStatus = "waiting";
+          state.objectiveEventStartedAt = null;
+          state.lastObjectiveEndedAt = null;
+          state.objectiveSecuredBy = "unknown";
+          state.objectiveEndKind = "normal";
+          state.nextObjectiveAtOverride = null;
+          state.objectiveHistory = [];
           render();
           persist();
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1423,6 +1933,18 @@
         }
         document.querySelector("#objective").addEventListener("change", (event) => {
           state.objective = event.target.value;
+          if (["ours", "contested", "enemy"].includes(state.objective)) {
+            state.objectiveEventStatus = "active";
+            state.objectiveEventStartedAt ??= gameTimeSeconds();
+          } else if (state.objective === "secured") {
+            state.objectiveEventStatus = "ended";
+            state.lastObjectiveEndedAt ??= gameTimeSeconds();
+            state.objectiveSecuredBy = "ours";
+          } else {
+            state.objectiveEventStatus = "waiting";
+            state.objectiveEventStartedAt = null;
+          }
+          renderObjectiveTimer();
           updateRecommendation();
           persist();
         });
@@ -1437,6 +1959,9 @@
           }
           input.setCustomValidity("");
           state.objectiveSeconds = seconds;
+          state.nextObjectiveAtOverride = seconds === null ? null : gameTimeSeconds() + seconds;
+          if (seconds !== null && state.objective === "unknown") state.objective = "soon";
+          renderObjectiveTimer();
           updateRecommendation();
           persist();
         };
@@ -1454,6 +1979,117 @@
           updateRecommendation();
           persist();
         });
+        const refreshTimer = () => {
+          renderObjectiveTimer();
+          updateRecommendation();
+          persist();
+        };
+        const setGameClock = (seconds) => {
+          state.gameClockSeconds = Math.max(0, Math.min(86400, Math.floor(seconds)));
+          if (state.gameClockStartedAt) state.gameClockStartedAt = Date.now();
+          renderObjectiveTimer();
+          updateRecommendation();
+          persist();
+        };
+        document.querySelector("#clock-pause").addEventListener("click", () => {
+          if (state.gameClockStartedAt) {
+            state.gameClockSeconds = gameTimeSeconds();
+            state.gameClockStartedAt = null;
+          } else {
+            state.gameClockStartedAt = Date.now();
+          }
+          refreshTimer();
+        });
+        document.querySelector("#clock-minus").addEventListener("click", () => setGameClock(gameTimeSeconds() - 30));
+        document.querySelector("#clock-plus").addEventListener("click", () => setGameClock(gameTimeSeconds() + 30));
+        document.querySelector("#clock-set").addEventListener("click", () => {
+          const input = document.querySelector("#clock-seconds");
+          const value = input.value.trim();
+          const seconds = value === "" ? null : Number(value);
+          if (input.validity.badInput || (value !== "" && (!Number.isInteger(seconds) || seconds < 0 || seconds > 86400))) {
+            input.setCustomValidity("게임 시계는 0부터 86400초 사이의 정수로 입력해 주세요.");
+            input.reportValidity();
+            return;
+          }
+          input.setCustomValidity("");
+          if (seconds !== null) setGameClock(seconds);
+        });
+        document.querySelector("#objective-time-set").addEventListener("click", () => {
+          const input = document.querySelector("#objective-time-override");
+          const target = parseGameTime(input.value);
+          if (input.value.trim() && (!Number.isInteger(target) || target < 0 || target > 86400)) {
+            input.setCustomValidity("시각은 MM:SS 또는 초 단위로 입력해 주세요. 예: 05:30");
+            input.reportValidity();
+            return;
+          }
+          input.setCustomValidity("");
+          saveObjectiveHistory();
+          state.nextObjectiveAtOverride = target;
+          if (target !== null) {
+            state.objectiveSeconds = null;
+            if (state.objective === "unknown") state.objective = "soon";
+          }
+          renderObjectiveTimer();
+          updateRecommendation();
+          persist();
+        });
+        document.querySelector("#previous-end-set").addEventListener("click", () => {
+          const input = document.querySelector("#previous-objective-end");
+          const endAt = parseGameTime(input.value);
+          if (input.value.trim() && (!Number.isInteger(endAt) || endAt < 0 || endAt > 86400)) {
+            input.setCustomValidity("시각은 MM:SS 또는 초 단위로 입력해 주세요. 예: 04:10");
+            input.reportValidity();
+            return;
+          }
+          input.setCustomValidity("");
+          saveObjectiveHistory();
+          state.lastObjectiveEndedAt = endAt;
+          state.objectiveEventStatus = endAt === null ? "waiting" : "ended";
+          state.objectiveSeconds = null;
+          state.nextObjectiveAtOverride = null;
+          if (endAt === null) state.objectiveSecuredBy = "unknown";
+          const rule = mapObjectiveRules[state.map];
+          state.objective = endAt !== null && rule && rule.repeat.mode !== "manual" ? "soon" : "unknown";
+          renderObjectiveTimer();
+          updateRecommendation();
+          persist();
+        });
+        document.querySelector("#objective-start").addEventListener("click", () => {
+          startObjectiveEvent();
+          renderObjectiveTimer();
+          updateRecommendation();
+          persist();
+        });
+        document.querySelector("#objective-end").addEventListener("click", () => {
+          endObjectiveEvent(
+            document.querySelector("#objective-winner").value,
+            document.querySelector("#objective-end-kind").value
+          );
+          renderObjectiveTimer();
+          updateRecommendation();
+          persist();
+        });
+        document.querySelector("#objective-undo").addEventListener("click", () => {
+          if (!undoObjectiveEvent()) return;
+          renderObjectiveTimer();
+          updateRecommendation();
+          persist();
+        });
+        document.querySelector("#objective-winner").addEventListener("change", (event) => {
+          state.objectiveSecuredBy = event.target.value;
+          updateRecommendation();
+          persist();
+        });
+        document.querySelector("#objective-end-kind").addEventListener("change", (event) => {
+          state.objectiveEndKind = event.target.value;
+          renderObjectiveTimer();
+          updateRecommendation();
+          persist();
+        });
+        window.setInterval(() => {
+          renderObjectiveTimer();
+          updateRecommendation();
+        }, 1000);
         document.querySelector("#reset").addEventListener("click", () => {
           if (!window.confirm("밴픽과 전황 입력을 모두 초기화할까요?")) return;
           state = defaultState();
