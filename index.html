@@ -160,6 +160,8 @@
       .hero-name { overflow: hidden; font-size: .82rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
       .hero-name .empty { color: #778399; font-weight: 500; }
       .hero-row select { min-height: 36px; padding: 5px 7px; font-size: .76rem; }
+      .respawn-control { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 120px; align-items: center; gap: 8px; color: var(--muted); font-size: .76rem; }
+      .respawn-control input { width: 100%; min-height: 36px; padding: 5px 7px; }
       .life-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: #0b111a; }
       .life-button { min-height: 34px; padding: 4px 7px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--muted); font-size: .76rem; font-weight: 700; }
       .life-button[aria-pressed="true"][data-value="alive"] { border-color: #386b55; background: #224c3a; color: #a5f0c7; }
@@ -200,6 +202,7 @@
       summary { color: #c8d4e6; font-size: .85rem; font-weight: 700; cursor: pointer; }
       .analysis { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: .82rem; }
       .analysis li + li { margin-top: 6px; }
+      .coach-limit { margin: 10px 0 0; color: var(--muted); font-size: .72rem; }
       .reset-button { width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--muted); font-weight: 700; }
       .reset-button:hover { border-color: var(--red); color: var(--red); }
       .page-actions { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; padding: 8px 0; margin-bottom: 8px; pointer-events: none; }
@@ -360,6 +363,11 @@
                     <option value="enemy">상대 팀 오브젝트 진행 중</option><option value="secured">이번 오브젝트 확보</option>
                   </select>
                 </div>
+                <div>
+                  <label class="field-label" for="objective-seconds">오브젝트까지 남은 시간 (초)</label>
+                  <input id="objective-seconds" type="number" min="0" max="600" step="1" inputmode="numeric" placeholder="모르면 비워두기">
+                  <p class="hint">진행 중이면 0초. 위치·이동 시간은 반영하지 않습니다.</p>
+                </div>
               </div>
               <p id="match-summary" class="hint"></p>
               <div id="battle-rosters"></div>
@@ -389,10 +397,11 @@
                 <summary>상세 분석 보기</summary>
                 <ul id="analysis" class="analysis"></ul>
               </details>
+              <p class="coach-limit">궁극기 참고는 일부 영웅의 교전 영향 잠재력에 대한 추정입니다. 선택한 궁극기와 실제 재사용 대기시간은 확인하지 않습니다.</p>
             </section>
             <section class="card">
               <h2>사용 안내</h2>
-              <p class="footnote" style="margin-top:9px">추천은 생존 인원, 레벨, 오브젝트 입력만 보는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
+              <p class="footnote" style="margin-top:9px">추천은 생존·레벨·부활·오브젝트·궁극기 입력을 활용하는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
             </section>
           </aside>
         </section>
@@ -550,9 +559,9 @@
             Object.entries(slots).map(([key, value]) => [key, Array(value.count).fill("")])
           ),
           battle: Object.fromEntries(["ours", "enemy"].map((team) => [
-            team, Array.from({ length: 5 }, () => ({ hero: "", alive: true, respawn: 0, ultimate: "unknown" }))
+            team, Array.from({ length: 5 }, () => ({ hero: "", alive: true, respawn: null, ultimate: "unknown" }))
           ])),
-          oursLevel: null, enemyLevel: null, objective: "unknown"
+          oursLevel: null, enemyLevel: null, objective: "unknown", objectiveSeconds: null
         });
         const saveState = document.querySelector("#save-state");
         const heroDialog = document.querySelector("#hero-dialog");
@@ -563,6 +572,7 @@
         function normalizeState(value) {
           const fresh = defaultState();
           if (!value || typeof value !== "object") return fresh;
+          const hasTimingData = Object.prototype.hasOwnProperty.call(value, "objectiveSeconds");
           if (value.phase === "game") fresh.phase = "game";
           if (typeof value.map === "string") fresh.map = value.map;
           if (value.draftOrder === "first" || value.draftOrder === "second") fresh.draftOrder = value.draftOrder;
@@ -587,11 +597,16 @@
                 return {
                   hero: heroList.includes(member?.hero) ? member.hero : "",
                   alive: member?.alive !== false,
-                  respawn: Number.isFinite(member?.respawn) ? Math.min(180, Math.max(0, member.respawn)) : 0,
+                  respawn: Number.isInteger(member?.respawn)
+                    ? !hasTimingData && member.respawn === 0 ? null : Math.min(180, Math.max(0, member.respawn))
+                    : null,
                   ultimate: ["unknown", "ready", "used"].includes(member?.ultimate) ? member.ultimate : "unknown"
                 };
               });
             }
+          }
+          if (Number.isInteger(value.objectiveSeconds) && value.objectiveSeconds >= 0 && value.objectiveSeconds <= 600) {
+            fresh.objectiveSeconds = value.objectiveSeconds;
           }
           return fresh;
         }
@@ -727,6 +742,11 @@
         }
 
         const talentLevels = [1, 4, 7, 10, 13, 16, 20];
+        const ultimateImpact = {
+          "가로쉬": 2, "아눕아락": 2, "메이": 2, "정예 타우렌 족장": 2, "메디브": 2,
+          "말가니스": 2, "바리안": 2, "무라딘": 2, "요한나": 1, "말퓨리온": 1,
+          "아나": 1, "우서": 1, "한조": 1, "정크랫": 1, "제이나": 1, "굴단": 1
+        };
 
         function levelDetails(level) {
           if (!Number.isInteger(level) || level < 1 || level > 30) return null;
@@ -783,6 +803,7 @@
                     <button class="life-button" type="button" data-team="${team}" data-index="${index}" data-field="alive" data-value="alive" aria-pressed="${member.alive}">생존</button>
                     <button class="life-button" type="button" data-team="${team}" data-index="${index}" data-field="alive" data-value="dead" aria-pressed="${dead}">사망</button>
                   </div>
+                  ${dead ? `<label class="respawn-control">부활까지 남은 시간 (초)<input type="number" min="0" max="180" step="1" inputmode="numeric" placeholder="미확인" value="${member.respawn ?? ""}" data-team="${team}" data-index="${index}" data-field="respawn" aria-label="${title} ${hero || `${index + 1}번`} 부활까지 남은 시간 (초)"></label>` : ""}
                   <select data-team="${team}" data-index="${index}" data-field="ultimate" aria-label="${title} ${hero || `${index + 1}번`} 주요 궁극기">
                     <option value="unknown"${member.ultimate === "unknown" ? " selected" : ""}>궁 미확인</option>
                     <option value="ready"${member.ultimate === "ready" ? " selected" : ""}>궁 가능</option>
@@ -796,11 +817,32 @@
             image.addEventListener("error", () => image.hidden = true, { once: true });
           });
           root.querySelectorAll("[data-field]").forEach((control) => {
+            if (control.dataset.field === "respawn") {
+              const updateRespawn = (event) => {
+                const raw = control.value.trim();
+                const respawn = raw === "" ? null : Number(raw);
+                if (control.validity.badInput || (raw !== "" && (!Number.isInteger(respawn) || respawn < 0 || respawn > 180))) {
+                  control.setCustomValidity("부활까지 남은 시간은 0부터 180 사이의 정수로 입력해 주세요.");
+                  if (event.type === "change") control.reportValidity();
+                  return;
+                }
+                control.setCustomValidity("");
+                state.battle[control.dataset.team][Number(control.dataset.index)].respawn = respawn;
+                updateRecommendation();
+                persist();
+              };
+              control.addEventListener("input", updateRespawn);
+              control.addEventListener("change", updateRespawn);
+              return;
+            }
             const update = () => {
               const team = control.dataset.team;
               const index = Number(control.dataset.index);
               const field = control.dataset.field;
-              if (field === "alive") state.battle[team][index].alive = control.dataset.value === "alive";
+              if (field === "alive") {
+                state.battle[team][index].alive = control.dataset.value === "alive";
+                if (state.battle[team][index].alive) state.battle[team][index].respawn = null;
+              }
               if (field === "ultimate") state.battle[team][index].ultimate = control.value;
               renderRosters();
               updateRecommendation();
@@ -828,14 +870,64 @@
           const levelAdvantage = levelsKnown && (levelDifference >= 2 || talentDifference > 0);
           const isEarlyGame = levelsKnown && state.oursLevel < 10 && state.enemyLevel < 10;
           const isLateGame = levelsKnown && Math.max(state.oursLevel, state.enemyLevel) >= 20;
+          const objectiveLabels = {
+            unknown: "미확인", soon: "곧 생성", ours: "우리 팀 진행 중",
+            contested: "경합 중", enemy: "상대 팀 진행 중", secured: "확보 완료"
+          };
+          const objectiveActive = ["soon", "ours", "contested", "enemy"].includes(state.objective);
+          const rallyTimingKnown = objectiveActive && Number.isInteger(state.objectiveSeconds);
           const missingHeroes = ["ours", "enemy"].some((team) =>
-            state.battle[team].some((member, index) => !pickedHero(team, index))
+            state.battle[team].some((member, index) => !(pickedHero(team, index) || member.hero))
           );
-          const incomplete = missingHeroes || !levelsKnown || state.objective === "unknown";
+          const availability = (team) => {
+            if (!rallyTimingKnown) return null;
+            const members = state.battle[team];
+            const revived = members.filter((member) => !member.alive && Number.isInteger(member.respawn) && member.respawn <= state.objectiveSeconds).length;
+            const unknownDead = members.filter((member) => !member.alive && !Number.isInteger(member.respawn)).length;
+            const confirmed = members.filter((member) => member.alive).length + revived;
+            return { confirmed, maximum: confirmed + unknownDead, unknownDead };
+          };
+          const oursRally = availability("ours");
+          const enemyRally = availability("enemy");
+          const confirmedRallyAdvantage = oursRally && enemyRally && oursRally.confirmed > enemyRally.maximum;
+          const largeRallyDisadvantage = oursRally && enemyRally && oursRally.maximum <= enemyRally.confirmed - 2;
+          const ultimateSummary = (team) => state.battle[team].reduce((summary, member, index) => {
+            const hero = pickedHero(team, index) || member.hero;
+            const impact = ultimateImpact[hero];
+            const canAttend = member.alive || (rallyTimingKnown && Number.isInteger(member.respawn) && member.respawn <= state.objectiveSeconds);
+            if (!impact) summary.unrated += 1;
+            if (member.ultimate === "unknown") summary.unknown += 1;
+            if (member.ultimate === "ready" && impact && canAttend) summary.readyImpact += impact;
+            return summary;
+          }, { readyImpact: 0, unknown: 0, unrated: 0 });
+          const oursUltimates = ultimateSummary("ours");
+          const enemyUltimates = ultimateSummary("enemy");
+          const ultimateAdvantage = oursUltimates.readyImpact >= enemyUltimates.readyImpact + 2;
+          const ultimateDisadvantage = enemyUltimates.readyImpact >= oursUltimates.readyImpact + 2;
+          const missingInfo = [];
+          if (missingHeroes) missingInfo.push("영웅 밴픽");
+          if (!levelsKnown) missingInfo.push("양 팀 레벨");
+          if (state.objective === "unknown") missingInfo.push("오브젝트 상황");
+          if (objectiveActive && !Number.isInteger(state.objectiveSeconds)) missingInfo.push("오브젝트까지 남은 시간");
+          if (rallyTimingKnown && (oursRally.unknownDead || enemyRally.unknownDead)) missingInfo.push("사망 영웅 부활 시간");
+          if (oursUltimates.unknown || enemyUltimates.unknown) missingInfo.push("궁극기 상태");
+          if (oursUltimates.unrated || enemyUltimates.unrated) missingInfo.push("일부 영웅의 궁극기 영향도 데이터");
+          const incomplete = missingInfo.length > 0;
+          const uncertaintyWarning = incomplete
+            ? `추가 확인: ${missingInfo.slice(0, 3).join(" · ")}${missingInfo.length > 3 ? " 등" : ""}.`
+            : "";
           const lines = [
             `생존 인원: 우리 팀 ${oursAlive}/5 · 상대 팀 ${enemyAlive}/5`,
-            `오브젝트: ${{unknown:"미확인",soon:"곧 생성",ours:"우리 팀 진행 중",contested:"경합 중",enemy:"상대 팀 진행 중",secured:"확보 완료"}[state.objective]}`
+            `오브젝트: ${objectiveLabels[state.objective]}${rallyTimingKnown ? ` · ${state.objectiveSeconds}초 후` : ""}`
           ];
+          if (oursRally && enemyRally) {
+            const formatAvailability = (summary) => summary.unknownDead
+              ? `${summary.confirmed}-${summary.maximum}/5 부활 기준 예상 · 부활 시간 미입력 ${summary.unknownDead}명`
+              : `${summary.confirmed}/5 오브젝트 시 합류 예상`;
+            lines.push(`예상 합류: 우리 팀 ${formatAvailability(oursRally)} · 상대 ${formatAvailability(enemyRally)}`);
+          } else if (objectiveActive) {
+            lines.push("예상 합류: 오브젝트 남은 시간 입력 필요");
+          }
           if (levelsKnown) {
             const phase = Math.max(state.oursLevel, state.enemyLevel) < 10
               ? "초반"
@@ -851,39 +943,29 @@
           } else {
             lines.push("레벨 및 특성 구간: 미입력");
           }
-          const readyOurs = ours.filter((member) => member.ultimate === "ready").length;
-          const usedOurs = ours.filter((member) => member.ultimate === "used").length;
-          lines.push(`우리 팀 궁극기: 가능 ${readyOurs} · 사용 ${usedOurs} · 미확인 ${5 - readyOurs - usedOurs}`);
+          lines.push(`교전 영향 궁극기 참고 점수: 우리 ${oursUltimates.readyImpact} · 상대 ${enemyUltimates.readyImpact} (일부 영웅만 집계)`);
           const base = {
-            action: "안전하게 모여 라인 경험치를 챙기세요",
-            reason: "확인된 정보가 적어 무리한 교전보다 안전한 파밍이 낫습니다.",
-            warning: "생존·양 팀 레벨·오브젝트 정보를 더 입력하면 추천이 구체적으로 바뀝니다.",
+            action: "전황을 더 입력한 뒤 합류 여부를 판단하세요",
+            reason: "현재 정보만으로는 안전한 교전이나 오브젝트 합류를 확정하기 어렵습니다.",
+            warning: uncertaintyWarning,
             urgency: "정보 부족",
             category: "기본 운영",
-            diagnosis: "입력 정보가 충분하지 않아 안전한 기본 운영을 우선합니다.",
+            diagnosis: missingInfo.length ? `확인 필요 · ${missingInfo.slice(0, 3).join(" · ")}` : "전황 입력 반영",
             evidence: "제한적",
-            analysis: lines
+            analysis: lines,
+            oursRally,
+            enemyRally
           };
           const set = (action, reason, warning = "") => {
-            const urgency = oursAlive <= 2 && oursAlive < enemyAlive
-              ? "긴급"
-              : enemyAlive <= 2 && oursAlive >= enemyAlive + 2
-                ? "기회"
-                : levelDisadvantage || state.objective === "enemy"
-                  ? "주의"
-                  : state.objective === "contested" || state.objective === "soon"
-                    ? "준비"
-                    : oursAlive >= enemyAlive + 2 || levelAdvantage
-                      ? "기회"
-                      : "기본";
+            let urgency = "기본";
+            if (oursAlive <= 2 && oursAlive < enemyAlive) urgency = "긴급";
+            else if (largeRallyDisadvantage || levelDisadvantage || (state.objective === "enemy" && !confirmedRallyAdvantage)) urgency = "주의";
+            else if (state.objective === "contested" || state.objective === "soon") urgency = "준비";
+            else if (confirmedRallyAdvantage || oursAlive >= enemyAlive + 2 || levelAdvantage) urgency = "기회";
             const levelText = levelsKnown
               ? `${Math.max(state.oursLevel, state.enemyLevel) < 10 ? "초반" : Math.max(state.oursLevel, state.enemyLevel) < 20 ? "중반" : "후반"} · 레벨 ${state.oursLevel}-${state.enemyLevel} · ${talentDifference > 0 ? "특성 구간 우위" : talentDifference < 0 ? "특성 구간 열세" : "특성 구간 동수"}`
               : "양 팀 레벨 미입력";
             const survivalText = oursAlive < enemyAlive ? "생존 인원 열세" : oursAlive > enemyAlive ? "생존 인원 우위" : "생존 인원 동수";
-            const objectiveText = {
-              unknown: "", soon: "오브젝트 생성 임박", ours: "우리 팀 오브젝트 진행",
-              contested: "오브젝트 경합", enemy: "상대 팀 오브젝트 진행", secured: "오브젝트 확보"
-            }[state.objective];
             const category = ["soon", "ours", "contested", "enemy", "secured"].includes(state.objective)
               ? "오브젝트 운영"
               : levelDisadvantage || levelAdvantage
@@ -893,22 +975,22 @@
               ...base,
               action,
               reason,
-              warning: warning || (incomplete ? "일부 정보가 미확인입니다. 실제 전황과 합류 위치를 확인한 뒤 실행하세요." : ""),
+              warning: [warning, uncertaintyWarning].filter(Boolean).join(" "),
               urgency,
               category,
-              diagnosis: [survivalText, levelText, objectiveText].filter(Boolean).join(" · "),
+              diagnosis: oursRally
+                ? `${survivalText} · 오브젝트 시 ${oursRally.confirmed}-${oursRally.maximum}명 예상 합류`
+                : `${survivalText} · ${levelText}`,
               evidence: incomplete ? "제한적" : "입력 반영"
             };
           };
 
+          // Priority: immediate survival, confirmed rally timing, talent disadvantage, objective state, then ultimate tie-breakers.
           if (oursAlive <= 2 && oursAlive < enemyAlive) {
             return set("후퇴해 시간을 버세요", "우리 팀 생존 인원이 적어 정면 교전에서 수적 열세입니다.", "아군이 다시 합류할 때까지 오브젝트 경합과 깊은 진입을 피하세요.");
           }
-          if (enemyAlive <= 2 && oursAlive >= enemyAlive + 2) {
-            if (state.objective === "ours" || state.objective === "contested" || state.objective === "soon") {
-              return set("팀을 모아 오브젝트를 확보하세요", "상대 생존 인원이 적어 짧은 시간 동안 안전하게 수적 우위를 활용할 수 있습니다.");
-            }
-            return set("가까운 안전한 목표를 함께 확보하세요", "상대 팀의 생존 인원이 적습니다. 무리한 추격보다 가까운 목표가 안전합니다.");
+          if (objectiveActive && largeRallyDisadvantage && ["contested", "enemy", "soon"].includes(state.objective)) {
+            return set("이번 오브젝트 정면 경합은 피하세요", `오브젝트 시 우리 팀은 최대 ${oursRally.maximum}명, 상대는 최소 ${enemyRally.confirmed}명이 합류할 수 있어 불리합니다.`, "사망한 아군의 부활 시간을 확인하고, 합류가 늦으면 라인·구조물 교환을 우선하세요.");
           }
           if (levelDisadvantage && state.objective !== "secured") {
             const reason = talentDifference < 0
@@ -917,21 +999,21 @@
             return set("특성 구간을 맞추며 불리한 교전을 피하세요", `${reason} 라인 경험치를 챙겨 다음 특성 구간에 합류하세요.`, "오브젝트가 이미 시작됐다면 인원과 진입 경로를 확인하고, 특성 열세 상태의 정면 교전은 신중히 판단하세요.");
           }
           if (state.objective === "enemy") {
-            if (isLateGame && oursAlive > enemyAlive && !levelDisadvantage) {
-              return set("팀을 모아 오브젝트 진입 경로를 확인하세요", "후반 오브젝트는 방치 비용이 큽니다. 생존 인원과 특성 구간의 우위를 활용하되, 단독 진입 없이 팀 합류를 먼저 확인하세요.");
-            }
-            if (isLateGame) {
-              return set("불리한 진입을 피하고 안전한 교환을 찾으세요", "상대 팀이 후반 오브젝트를 진행 중이지만 현재 합류·전투 우위가 확인되지 않습니다.", "핵심 구조물과 생존 인원을 확인하세요. 후반에는 무리한 진입으로 추가 사망을 내지 않는 것이 중요합니다.");
+            if (confirmedRallyAdvantage && !levelDisadvantage) {
+              return set("팀을 모아 오브젝트 진입 경로를 확인하세요", "부활 시점 기준 예상 합류 인원 우위가 확인됩니다. 위치와 특성 구간을 확인하고 함께 움직이세요.");
             }
             return set("오브젝트에서 물러나 라인을 정리하세요", "상대가 오브젝트를 진행 중입니다. 수적·레벨 우위가 확인되지 않아 맞교전은 위험합니다.", "상대 사망이나 확실한 인원 우위를 확인하기 전에는 진입하지 마세요.");
           }
           if (state.objective === "contested") {
-            if (oursAlive > enemyAlive && levelsKnown && levelDifference >= 0 && talentDifference >= 0) {
+            const confirmedEvenOrBetter = oursRally && enemyRally && oursRally.confirmed >= enemyRally.confirmed
+              && oursRally.unknownDead === 0 && enemyRally.unknownDead === 0;
+            if ((confirmedRallyAdvantage || confirmedEvenOrBetter) && !levelDisadvantage) {
+              const ultimateReason = ultimateAdvantage ? " 입력된 궁극기 중 교전 영향도가 높은 영웅의 사용 가능 상태도 우위입니다." : "";
               return set("팀을 모아 오브젝트에 합류하세요", isLateGame
-                ? "후반 오브젝트가 승패에 큰 영향을 줄 수 있습니다. 확인된 생존 인원·특성 우위를 활용하되 전원이 함께 움직이세요."
+                ? `후반 오브젝트입니다. 예상 합류 인원과 특성 구간을 확인하고 전원이 함께 움직이세요.${ultimateReason}`
                 : isEarlyGame
-                  ? "초반 오브젝트도 중요하지만, 생존 인원과 특성 구간 우위를 확인했습니다. 합류 인원을 모아 짧게 교전하세요."
-                  : "생존 인원 우위와 레벨·특성 열세가 아닌 상황이라 함께 합류할 여지가 있습니다.");
+                  ? `초반 오브젝트 합류로 잃을 라인 경험치도 고려하세요. 팀을 모아 짧게 교전하세요.${ultimateReason}`
+                  : `예상 합류 인원과 특성 구간을 확인한 뒤 팀 단위로 진입하세요.${ultimateReason}`);
             }
             return set("시야와 합류 인원을 확인하세요", isEarlyGame
               ? "초반에는 오브젝트 합류로 놓칠 라인 경험치도 고려하세요. 교전 조건이 불확실하므로 팀이 모이기 전 진입은 피하세요."
@@ -943,11 +1025,23 @@
             return set("오브젝트를 안전하게 마무리하세요", "우리 팀이 진행 중입니다. 상대의 진입 경로를 살피며 흩어지지 마세요.");
           }
           if (state.objective === "soon") {
-            return set("팀을 모으고 오브젝트 주변을 확인하세요", isEarlyGame
+            return set("예상 합류 인원을 확인해 미리 모이세요", isEarlyGame
               ? "오브젝트 생성 전 합류 위치를 확인하되, 초반 라인 경험치를 오래 비우지 않도록 팀 이동 타이밍을 맞추세요."
               : isLateGame
                 ? "후반 오브젝트 전에 전원을 모으고 진입 경로를 정리하세요. 한 명의 이탈이 목표 확보에 큰 공백을 만들 수 있습니다."
                 : "오브젝트가 곧 생성됩니다. 미리 합류하면 단독으로 늦게 진입하는 위험을 줄일 수 있습니다.");
+          }
+          if (state.objective === "secured") {
+            return set("오브젝트 이득을 활용해 라인을 정리하세요", "이번 오브젝트는 확보했습니다. 다음 목표를 준비하며 불필요한 추격을 삼가세요.");
+          }
+          if (enemyAlive <= 2 && oursAlive >= enemyAlive + 2) {
+            return set("가까운 안전한 목표를 함께 확보하세요", "상대 팀의 생존 인원이 적습니다. 무리한 추격보다 가까운 목표가 안전합니다.");
+          }
+          if (ultimateAdvantage && !levelDisadvantage && oursAlive >= enemyAlive) {
+            return set("궁극기 준비된 팀원을 모아 유리한 교전을 찾으세요", `입력된 상태와 일부 영웅별 영향도 추정에서 우리 팀의 교전 궁극기 점수가 ${oursUltimates.readyImpact} 대 ${enemyUltimates.readyImpact}로 높습니다.`, "궁극기 선택과 실제 재사용 대기시간은 입력되지 않아 영웅별 점수는 참고치입니다.");
+          }
+          if (ultimateDisadvantage && !levelAdvantage && oursAlive <= enemyAlive) {
+            return set("상대 궁극기 사용을 확인하고 교전을 늦추세요", `입력된 상태와 일부 영웅별 영향도 추정에서 상대 팀의 교전 궁극기 점수가 ${enemyUltimates.readyImpact} 대 ${oursUltimates.readyImpact}로 높습니다.`, "궁극기 선택과 실제 재사용 대기시간은 입력되지 않아 영웅별 점수는 참고치입니다.");
           }
           if (oursAlive >= enemyAlive + 2) {
             return set("가까운 목표를 함께 압박하세요", "생존 인원 우위가 있습니다. 흩어지지 말고 가까운 라인이나 구조물을 압박하세요.");
@@ -956,7 +1050,7 @@
             return set("라인 경험치를 챙겨 다음 특성 구간을 준비하세요", "양 팀 모두 10레벨 특성 전인 초반입니다. 불필요한 추격보다 안전한 경험치 수급이 다음 특성 구간 합류에 도움이 됩니다.");
           }
           if (isLateGame && state.objective === "unknown") {
-            return set("다음 오브젝트를 대비해 팀을 모으세요", "20레벨 특성 이후의 후반 구간입니다. 한 명의 이탈이나 사망이 다음 목표에 큰 영향을 줄 수 있어 라인 정리 후 안전하게 합류하세요.", "오브젝트 생성 시점과 핵심 구조물 상태를 확인해 합류 우선순위를 조정하세요.");
+            return set("다음 오브젝트를 대비해 팀을 모으세요", "20레벨 특성 이후의 후반 구간입니다. 한 명의 이탈이나 사망이 다음 목표에 큰 영향을 줄 수 있어 라인 정리 후 안전하게 합류하세요.");
           }
           if (levelAdvantage && oursAlive >= enemyAlive) {
             return set("팀을 모아 유리한 교전을 찾으세요", "레벨 우위와 생존 인원을 바탕으로 유리한 위치의 교전을 선택하세요.");
@@ -964,16 +1058,7 @@
           if (levelsKnown && levelDifference === 0 && talentDifference === 0 && oursAlive >= 4 && enemyAlive >= 4) {
             return set("다섯 명을 모아 안전한 라인을 압박하세요", "양 팀 생존 인원이 비슷합니다. 단독 교전보다 팀 합류와 위치 확인이 우선입니다.");
           }
-          if (state.objective === "secured") {
-            return set("오브젝트 이득을 활용해 라인을 정리하세요", "이번 오브젝트는 확보했습니다. 다음 목표를 준비하며 불필요한 추격을 삼가세요.");
-          }
-          if (missingHeroes || !levelsKnown || state.objective === "unknown") {
-            return {
-              ...base,
-              warning: missingHeroes ? "밴픽 영웅이 비어 있고 전황 일부가 미확인입니다. 실제 상황을 확인한 뒤 행동하세요." : base.warning,
-              diagnosis: missingHeroes ? "영웅 밴픽 및 전황 정보 확인 필요" : !levelsKnown ? "양 팀 레벨을 입력해 특성 구간을 확인하세요" : "전황 정보 추가 입력 필요"
-            };
-          }
+          if (incomplete || state.objective === "unknown") return base;
           return set("팀과 함께 안전한 라인을 정리하세요", "뚜렷한 우위가 확인되지 않아 고립을 피하고 다음 오브젝트에 대비하세요.");
         }
 
@@ -993,7 +1078,11 @@
             const teamLabel = document.createElement("span");
             teamLabel.textContent = label;
             const count = document.createElement("strong");
-            count.textContent = `${alive}/5 생존${advantage === "trailing" ? " · 열세" : advantage === "leading" ? " · 우세" : " · 동수"}`;
+            const rally = team === "ours" ? recommendation.oursRally : recommendation.enemyRally;
+            const rallyText = rally
+              ? ` · 오브젝트 시 ${rally.confirmed}${rally.maximum !== rally.confirmed ? `-${rally.maximum}` : ""}명 예상`
+              : "";
+            count.textContent = `${alive}/5 생존${advantage === "trailing" ? " · 열세" : advantage === "leading" ? " · 우세" : " · 동수"}${rallyText}`;
             row.append(teamLabel, count);
             survivalSummary.append(row);
           }
@@ -1027,6 +1116,7 @@
           const order = document.querySelector(`input[name="draft-order"][value="${state.draftOrder}"]`);
           if (order) order.checked = true;
           document.querySelector("#objective").value = state.objective;
+          document.querySelector("#objective-seconds").value = state.objectiveSeconds ?? "";
           document.querySelector("#ours-level").value = state.oursLevel ?? "";
           document.querySelector("#enemy-level").value = state.enemyLevel ?? "";
           renderLevelSummary();
@@ -1103,6 +1193,22 @@
           updateRecommendation();
           persist();
         });
+        const updateObjectiveSeconds = (event) => {
+          const input = event.target;
+          const raw = input.value.trim();
+          const seconds = raw === "" ? null : Number(raw);
+          if (input.validity.badInput || (raw !== "" && (!Number.isInteger(seconds) || seconds < 0 || seconds > 600))) {
+            input.setCustomValidity("오브젝트까지 남은 시간은 0부터 600 사이의 정수로 입력해 주세요.");
+            if (event.type === "change") input.reportValidity();
+            return;
+          }
+          input.setCustomValidity("");
+          state.objectiveSeconds = seconds;
+          updateRecommendation();
+          persist();
+        };
+        document.querySelector("#objective-seconds").addEventListener("input", updateObjectiveSeconds);
+        document.querySelector("#objective-seconds").addEventListener("change", updateObjectiveSeconds);
         document.querySelector("#reset").addEventListener("click", () => {
           if (!window.confirm("밴픽과 전황 입력을 모두 초기화할까요?")) return;
           state = defaultState();
