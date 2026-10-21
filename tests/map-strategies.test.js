@@ -62,7 +62,7 @@ function loadCoachHarness() {
     querySelectorAll: () => [],
     createElement: () => new Element(),
     activeElement: null,
-    body: { style: { setProperty() {}, removeProperty() {} } }
+    body: { style: { setProperty(name, value) { this[name] = value; }, removeProperty(name) { delete this[name]; } } }
   };
   let confirmResult = true;
   let confirmCalls = 0;
@@ -85,7 +85,7 @@ function loadCoachHarness() {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   assert.ok(inlineScript, "page has an inline application script");
-  const hook = `window.__coachTest = { defaultState, getState: () => state, setState: (next) => { state = next; }, makeRecommendation, normalizeState, renderObjectiveTimer, respawnSecondsRemaining, updateRespawnCountdowns, teamSurvival };
+  const hook = `window.__coachTest = { defaultState, getState: () => state, setState: (next) => { state = next; }, makeRecommendation, normalizeState, renderObjectiveTimer, respawnSecondsRemaining, updateRespawnCountdowns, teamSurvival, mapBackgrounds, updateMapBackground };
         loadState();`;
   const instrumented = inlineScript.replace("        loadState();", hook);
   assert.notEqual(instrumented, inlineScript, "test hook insertion point exists");
@@ -93,6 +93,7 @@ function loadCoachHarness() {
   return {
     coach: window.__coachTest,
     querySelector,
+    bodyStyle: document.body.style,
     storage,
     now: () => now,
     setTime(value) { now = value; },
@@ -339,8 +340,9 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
   assert.equal(ids.length, new Set(ids).size, "HTML ids remain unique");
   const mapOptions = html.match(/<select id="map">([\s\S]*?)<\/select>/)?.[1].match(/<option(?![^>]*value="")[^>]*>/g);
-  assert.equal(mapOptions?.length, 14, "all 14 battleground choices remain available");
+  assert.equal(mapOptions?.length, 15, "all 15 battleground choices remain available");
   const prepScreen = html.match(/<section id="prep-screen"[\s\S]*?<\/section>\s*<section id="game-screen"/)?.[0];
+  assert.match(prepScreen, /<option>죽음의 광산<\/option>/);
   assert.doesNotMatch(prepScreen, /name="draft-order"|밴픽 순서|선픽|후픽/);
 
   const advancedTimer = html.match(/<details class="advanced-controls">([\s\S]*?)<\/details>/)?.[1];
@@ -384,6 +386,41 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   }
   assert.doesNotMatch(quickDashboard, /data-quick-action="fight-(?:won|lost)"/);
   assert.match(html, /<details id="detailed-inputs" class="full-controls">/);
+});
+
+test("each selectable battleground uses its matching local background image", () => {
+  const { coach, bodyStyle } = loadCoachHarness();
+  const expected = {
+    "거미 여왕의 무덤": "spider.webp",
+    "공포의 정원": "horror.webp",
+    "파멸의 탑": "tower.webp",
+    "불지옥 신단": "hell.webp",
+    "브락시스 항전": "braksis.webp",
+    "볼스카야 공장": "factory.webp",
+    "죽음의 광산": "deathmine.webp",
+    "저주받은 골짜기": "cursed.webp",
+    "용의 둥지": "dragon.webp",
+    "영원의 전쟁터": "forever.webp",
+    "하늘 사원": "sky.webp",
+    "핵탄두 격전지": "nuclear.webp",
+    "알터랙 고개": "hill.webp",
+    "하나무라 사원": "hanamura.webp",
+    "블랙하트 항만": "black.webp"
+  };
+  const root = path.join(__dirname, "..");
+
+  assert.deepEqual(Object.keys(coach.mapBackgrounds).sort(), Object.keys(expected).sort());
+  for (const [map, file] of Object.entries(expected)) {
+    assert.equal(coach.mapBackgrounds[map], `images/${file}`);
+    assert.ok(fs.existsSync(path.join(root, "images", file)), `${map} background exists`);
+    coach.setState({ ...coach.defaultState(), map });
+    coach.updateMapBackground();
+    assert.equal(bodyStyle["--map-background-image"], `url("images/${file}")`);
+  }
+
+  coach.setState({ ...coach.defaultState(), map: "" });
+  coach.updateMapBackground();
+  assert.equal(bodyStyle["--map-background-image"], undefined, "no-map state removes the selected background");
 });
 
 test("bilingual encouragement quote is shown above the page and rotates without an immediate repeat", () => {

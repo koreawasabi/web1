@@ -11,7 +11,7 @@ Heroes of the Storm 경기에서 전장과 밴픽, 양 팀의 전황을 입력�
 
 - 첫 화면에서 전장과 양 팀 밴·픽을 입력하는 게임 준비 화면
 - 페이지 최상단에 영어·한국어 응원 문구 12개 중 하나를 표시하고, 같은 문구를 연속으로 반복하지 않으며 60초마다 변경
-- 전장을 선택하면 해당 전장 이미지가 페이지 배경에 표시되며, 선택 내용과 함께 자동 저장
+- 전장을 선택하면 해당 전장에 대응하는 로컬 WebP 이미지가 페이지 배경에 표시되며, 선택 내용과 함께 자동 저장 (죽음의 광산 포함)
 - 선택한 전장의 목표·라인 구조를 바탕으로 추천 영웅과 우선순위를 낮춰 고려할 영웅 안내
 - 검색 가능한 영웅 선택, 잘아타스 포함, 밴·픽 간 중복 선택 방지
 - 준비 화면에서 새 경기를 시작하거나 저장된 경기를 이어할 수 있으며, 새 경기 시작 시 전장·밴픽을 유지하고 이전 전황만 초기화
@@ -47,7 +47,7 @@ Heroes of the Storm 경기에서 전장과 밴픽, 양 팀의 전황을 입력�
 
 맵 오브젝트 시간은 [저주받은 골짜기](https://heroesofthestorm.fandom.com/wiki/Cursed_Hollow), [공포의 정원](https://heroesofthestorm.fandom.com/wiki/Garden_of_Terror), [파멸의 탑](https://heroesofthestorm.fandom.com/wiki/Towers_of_Doom), [불지옥 신단](https://heroesofthestorm.fandom.com/wiki/Infernal_Shrines), [브락시스 항전](https://heroesofthestorm.fandom.com/wiki/Braxis_Holdout), [볼스카야 공장](https://heroesofthestorm.fandom.com/wiki/Volskaya_Foundry), [용의 둥지](https://heroesofthestorm.fandom.com/wiki/Dragon_Shire), [영원의 전쟁터](https://heroesofthestorm.fandom.com/wiki/Battlefield_of_Eternity), [하늘 사원](https://heroesofthestorm.fandom.com/wiki/Sky_Temple), [핵탄두 격전지](https://heroesofthestorm.fandom.com/wiki/Warhead_Junction), [알터랙 고개](https://heroesofthestorm.fandom.com/wiki/Alterac_Pass), [하나무라 사원](https://heroesofthestorm.fandom.com/wiki/Hanamura_Temple), [거미 여왕의 무덤](https://heroesofthestorm.fandom.com/wiki/Tomb_of_the_Spider_Queen), [블랙하트 항만](https://heroesofthestorm.fandom.com/wiki/Blackheart%27s_Bay)의 커뮤니티 위키 설명을 참고했습니다. 게임 업데이트에 따른 규칙 차이가 있을 수 있으므로, 실제 경기의 표시가 다르면 수동으로 보정해야 합니다.
 
-전장 배경 이미지는 히오스 위키의 이미지 CDN에서 불러오므로 표시할 때 인터넷 연결이 필요합니다.
+전장 배경 이미지는 저장소의 `images/` 폴더에서 불러옵니다. 죽음의 광산은 선택 가능한 전장에 포함되어 배경을 표시하지만, 현재 오브젝트 타이머 규칙 데이터는 없으므로 게임 내 시각을 확인해 직접 보정해야 합니다.
 게임 중 영웅 초상화도 외부 이미지 CDN에서 불러옵니다. 생존/사망은 두 버튼으로 바로 전환할 수 있습니다.
 
 ## 배포
