@@ -44,6 +44,8 @@ function loadCoachHarness() {
     close() { this.open = false; }
     showModal() { this.open = true; }
     focus() {}
+    setAttribute(name, value) { this.attributes ??= {}; this.attributes[name] = value; }
+    scrollIntoView() {}
   }
   const elements = new Map();
   const querySelector = (selector) => {
@@ -78,7 +80,7 @@ function loadCoachHarness() {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   assert.ok(inlineScript, "page has an inline application script");
-  const hook = `window.__coachTest = { defaultState, setState: (next) => { state = next; }, makeRecommendation, normalizeState };
+  const hook = `window.__coachTest = { defaultState, setState: (next) => { state = next; }, makeRecommendation, normalizeState, renderObjectiveTimer };
         loadState();`;
   const instrumented = inlineScript.replace("        loadState();", hook);
   assert.notEqual(instrumented, inlineScript, "test hook insertion point exists");
@@ -289,13 +291,20 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   assert.match(html, /<button id="objective-start"/);
   assert.match(html, /<button id="objective-end"/);
 
-  const heroInputs = html.match(/<details class="secondary-inputs">\s*<summary>영웅별 생존 · 부활 · 궁극기<\/summary>([\s\S]*?)<\/details>/)?.[1];
+  const heroInputs = html.match(/<details[^>]*id="hero-details"[^>]*>\s*<summary>영웅별 생존 · 부활 · 궁극기<\/summary>([\s\S]*?)<\/details>/)?.[1];
   assert.match(heroInputs, /id="battle-rosters"/);
   const recommendationDetails = html.match(/<details class="recommendation-more">([\s\S]*?)<\/details>/)?.[1];
   assert.ok(html.indexOf('<p id="recommendation"') < html.indexOf('<details class="recommendation-more">'));
   assert.match(recommendationDetails, /id="execution-condition"/);
   assert.match(recommendationDetails, /id="alternative"/);
   assert.ok(html.indexOf('id="fight-result"') < html.indexOf('class="objective-timer"'));
+  const quickDashboard = html.match(/<section class="quick-dashboard card"([\s\S]*?)<\/section>/)?.[1];
+  assert.match(quickDashboard, /id="game-clock"/);
+  assert.match(quickDashboard, /id="quick-objective-countdown"/);
+  for (const action of ["fight-won", "fight-lost", "objective-contested", "ally-dead"]) {
+    assert.match(quickDashboard, new RegExp(`data-quick-action="${action}"`));
+  }
+  assert.match(html, /<details id="detailed-inputs" class="full-controls">/);
 });
 
 test("quick objective controls preserve start, secure, correction, and undo behavior", () => {
@@ -323,4 +332,37 @@ test("quick objective controls preserve start, secure, correction, and undo beha
   querySelector("#objective-undo").listeners.click();
   assert.equal(state.objectiveEventStatus, "active");
   assert.equal(state.objective, "contested");
+});
+
+test("quick situation cards update the same recommendation state and reveal ally details", () => {
+  const { coach, querySelector } = loadCoachHarness();
+  const state = coach.defaultState();
+  state.map = "저주받은 골짜기";
+  state.gameClockSeconds = 140;
+  state.gameClockStartedAt = null;
+  coach.setState(state);
+  coach.renderObjectiveTimer();
+  assert.equal(querySelector("#quick-objective-countdown").textContent, "40초 후");
+  const click = querySelector(".quick-choice-grid").listeners.click;
+
+  const clickAction = (action) => {
+    const button = {
+      dataset: { quickAction: action },
+      closest: (selector) => selector === "[data-quick-action]" ? button : null
+    };
+    click({ target: button });
+  };
+  clickAction("fight-won");
+  assert.equal(state.fightResult, "won");
+  assert.equal(querySelector("#fight-result").value, "won");
+  clickAction("fight-lost");
+  assert.equal(state.fightResult, "lost");
+
+  clickAction("objective-contested");
+  assert.equal(state.objectiveEventStatus, "active");
+  assert.equal(state.objective, "contested");
+  assert.equal(querySelector("#quick-objective-countdown").textContent, "진행 중");
+  clickAction("ally-dead");
+  assert.equal(querySelector("#detailed-inputs").open, true);
+  assert.equal(querySelector("#hero-details").open, true);
 });

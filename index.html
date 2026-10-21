@@ -122,6 +122,29 @@
       .secondary-button { border-color: var(--line); background: transparent; color: var(--text); }
       .secondary-button:hover { border-color: var(--blue); }
       .battle-layout { display: grid; grid-template-columns: minmax(0, 1fr) 350px; align-items: start; gap: 18px; }
+      .quick-dashboard { grid-column: 1 / -1; }
+      .quick-dashboard-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .quick-dashboard-header h2 { margin: 0; font-size: 1.25rem; }
+      .quick-mode-badge { padding: 6px 11px; border-radius: 999px; background: #224c3a; color: #a5f0c7; font-size: .8rem; font-weight: 800; }
+      .quick-clock-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+      .quick-clock-item:last-child { text-align: right; }
+      .quick-clock-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: .82rem; }
+      .quick-clock-value { font-size: 1.65rem; font-variant-numeric: tabular-nums; font-weight: 850; }
+      .quick-section-title { margin: 16px 0 10px; font-size: 1rem; }
+      .quick-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+      .quick-choice {
+        display: grid; min-height: 98px; place-content: center; justify-items: center; gap: 9px;
+        border: 1px solid var(--line); border-radius: 12px; background: #111824; color: var(--text);
+        font-size: 1rem; font-weight: 700;
+      }
+      .quick-choice:hover, .quick-choice:focus-visible { border-color: var(--blue); background: #202d40; }
+      .quick-choice[aria-pressed="true"] { border-color: var(--blue); background: #1e3a52; color: #a7dcff; }
+      .quick-icon { font-size: 1.35rem; line-height: 1; }
+      .quick-back { min-height: 36px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); }
+      .full-controls { margin: 0; padding: 0; border: 0; }
+      .full-controls > summary { min-height: 42px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+      .full-controls[open] > summary { margin-bottom: 12px; }
+      .main-column .full-controls > .card { margin: 0; }
       .phase-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
       .hero-dialog {
         width: min(520px, calc(100% - 24px));
@@ -252,7 +275,9 @@
       @media (max-width: 850px) {
         .battle-layout { grid-template-columns: minmax(0, 1fr); }
         .recommendation { position: static; }
-        .side-column { order: -1; }
+        .side-column { order: 1; }
+        .main-column { order: 2; }
+        .quick-dashboard { order: 0; }
       }
       @media (max-width: 600px) {
         .shell { width: min(100% - 20px, 520px); padding-top: 18px; }
@@ -286,6 +311,7 @@
         .map-strategy-controls { grid-template-columns: 1fr; }
         .quick-objective-controls { grid-template-columns: 1fr 1fr; }
         .quick-objective-controls select { grid-column: 1 / -1; }
+        .quick-choice { min-height: 88px; }
       }
       @media (max-width: 380px) {
         #battle-rosters { gap: 6px; }
@@ -379,15 +405,42 @@
         </section>
 
         <section id="game-screen" class="battle-layout" aria-label="게임 중 전황 입력" hidden>
-          <div class="main-column">
-            <section class="card" aria-labelledby="battle-heading">
-              <div class="phase-heading">
-                <div>
-                  <p class="eyebrow">IN-GAME</p>
-                  <h2 id="battle-heading">게임 중 전황</h2>
-                </div>
-                <button id="back-to-prep" class="secondary-button" type="button">← 밴픽 수정</button>
+          <section class="quick-dashboard card" aria-labelledby="battle-heading">
+            <div class="quick-dashboard-header">
+              <h2 id="battle-heading">게임 중 전황</h2>
+              <span class="quick-mode-badge">간편 모드</span>
+              <button id="back-to-prep" class="quick-back" type="button">밴픽 수정</button>
+            </div>
+            <div class="quick-clock-row">
+              <div class="quick-clock-item">
+                <span class="quick-clock-label">게임 시간</span>
+                <span id="game-clock" class="quick-clock-value" aria-live="off">00:00</span>
               </div>
+              <div class="quick-clock-item">
+                <span class="quick-clock-label">다음 오브젝트</span>
+                <span id="quick-objective-countdown" class="quick-clock-value">미확인</span>
+              </div>
+            </div>
+            <h3 class="quick-section-title">지금 상황을 선택해</h3>
+            <div class="quick-choice-grid" aria-label="빠른 상황 입력">
+              <button class="quick-choice" type="button" data-quick-action="fight-won" aria-pressed="false">
+                <span class="quick-icon" aria-hidden="true">⚔</span><span>한타 승리</span>
+              </button>
+              <button class="quick-choice" type="button" data-quick-action="fight-lost" aria-pressed="false">
+                <span class="quick-icon" aria-hidden="true">⛨</span><span>한타 패배</span>
+              </button>
+              <button class="quick-choice" type="button" data-quick-action="objective-contested" aria-pressed="false">
+                <span class="quick-icon" aria-hidden="true">◎</span><span>오브젝트 경합</span>
+              </button>
+              <button class="quick-choice" type="button" data-quick-action="ally-dead" aria-pressed="false">
+                <span class="quick-icon" aria-hidden="true">☠</span><span>아군 사망</span>
+              </button>
+            </div>
+          </section>
+          <div class="main-column">
+            <details id="detailed-inputs" class="full-controls">
+              <summary>상세 입력 · 레벨, 맵 상태, 영웅 정보</summary>
+              <section class="card" aria-label="상세 전황 입력">
               <div class="level-controls">
                 <div>
                   <label class="field-label" for="ours-level">우리 팀 현재 레벨 (1–30)</label>
@@ -414,7 +467,6 @@
                 <div class="timer-heading">
                   <h3 id="objective-timer-heading">게임 시계 · 오브젝트</h3>
                   <div class="timer-readout">
-                    <span id="game-clock" class="timer-clock" aria-live="off">00:00</span>
                     <button id="clock-pause" type="button">시계 시작 / 재개</button>
                   </div>
                 </div>
@@ -510,11 +562,12 @@
                 </div>
               </details>
               <p id="match-summary" class="hint"></p>
-              <details class="secondary-inputs">
+              <details id="hero-details" class="secondary-inputs">
                 <summary>영웅별 생존 · 부활 · 궁극기</summary>
                 <div id="battle-rosters"></div>
               </details>
-            </section>
+              </section>
+            </details>
           </div>
           <aside class="side-column">
             <section class="card recommendation" aria-labelledby="recommend-heading">
@@ -1078,6 +1131,20 @@
             statusText = "이 맵에는 고정 등장 시각이 없거나 확인되지 않았습니다. 게임 내 목표 시각을 직접 입력하세요.";
           }
           document.querySelector("#objective-timer-status").textContent = statusText;
+          const quickCountdown = document.querySelector("#quick-objective-countdown");
+          const formatQuickRemaining = (seconds) => seconds < 60
+            ? `${seconds}초`
+            : `${Math.floor(seconds / 60)}분${seconds % 60 ? ` ${seconds % 60}초` : ""}`;
+          if (timer.phase === "active") {
+            quickCountdown.textContent = "진행 중";
+          } else if (Number.isInteger(timer.minRemaining)) {
+            const remaining = timer.minRemaining === timer.maxRemaining
+              ? formatQuickRemaining(timer.minRemaining)
+              : `${formatQuickRemaining(timer.minRemaining)}–${formatQuickRemaining(timer.maxRemaining)}`;
+            quickCountdown.textContent = `${remaining} 후`;
+          } else {
+            quickCountdown.textContent = "미확인";
+          }
           const countdown = document.querySelector("#objective-countdown");
           if (timer.phase === "active") {
             countdown.textContent = "오브젝트 진행 중";
@@ -1961,6 +2028,22 @@
             `${recommendation.expectedBenefit} 위험: ${recommendation.risk}`;
           document.querySelector("#warning-text").textContent = recommendation.warning;
           document.querySelector("#analysis").innerHTML = recommendation.analysis.map((line) => `<li>${line}</li>`).join("");
+          renderQuickActions();
+        }
+
+        function renderQuickActions() {
+          const hasKnownAllyDeath = state.battle.ours.some((member, index) =>
+            (pickedHero("ours", index) || member.hero) && !member.alive
+          );
+          const selected = {
+            "fight-won": state.fightResult === "won",
+            "fight-lost": state.fightResult === "lost",
+            "objective-contested": state.objectiveEventStatus === "active",
+            "ally-dead": hasKnownAllyDeath
+          };
+          document.querySelector(".quick-choice-grid").querySelectorAll("[data-quick-action]").forEach((button) => {
+            button.setAttribute("aria-pressed", String(selected[button.dataset.quickAction]));
+          });
         }
 
         function updateMapBackground() {
@@ -2156,6 +2239,33 @@
           state.fightResult = event.target.value;
           updateRecommendation();
           persist();
+        });
+        document.querySelector(".quick-choice-grid").addEventListener("click", (event) => {
+          const button = event.target.closest("[data-quick-action]");
+          if (!button) return;
+          if (button.dataset.quickAction === "fight-won" || button.dataset.quickAction === "fight-lost") {
+            state.fightResult = button.dataset.quickAction === "fight-won" ? "won" : "lost";
+            document.querySelector("#fight-result").value = state.fightResult;
+            updateRecommendation();
+            persist();
+            return;
+          }
+          if (button.dataset.quickAction === "objective-contested") {
+            if (state.objectiveEventStatus !== "active") startObjectiveEvent();
+            document.querySelector("#objective").value = state.objective;
+            renderObjectiveTimer();
+            updateRecommendation();
+            persist();
+            return;
+          }
+          if (button.dataset.quickAction === "ally-dead") {
+            document.querySelector("#detailed-inputs").open = true;
+            const heroDetails = document.querySelector("#hero-details");
+            heroDetails.open = true;
+            const roster = document.querySelector("#battle-rosters");
+            roster.scrollIntoView({ behavior: "smooth", block: "start" });
+            roster.querySelector(".hero-row .life-button[data-team='ours'][data-value='dead']")?.focus();
+          }
         });
         const refreshTimer = () => {
           renderObjectiveTimer();
