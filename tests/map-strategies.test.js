@@ -272,3 +272,55 @@ test("random draft creates unique heroes, persists, and protects an existing dra
   assert.equal(JSON.stringify(state.draft), previousDraft);
   assert.equal(getConfirmCalls(), 1);
 });
+
+test("game screen keeps quick controls visible and groups detailed inputs under disclosures", () => {
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(ids.length, new Set(ids).size, "HTML ids remain unique");
+  const mapOptions = html.match(/<select id="map">([\s\S]*?)<\/select>/)?.[1].match(/<option(?![^>]*value="")[^>]*>/g);
+  assert.equal(mapOptions?.length, 14, "all 14 battleground choices remain available");
+
+  const advancedTimer = html.match(/<details class="advanced-controls">([\s\S]*?)<\/details>/)?.[1];
+  assert.ok(advancedTimer, "timer correction controls are in an advanced disclosure");
+  assert.match(advancedTimer, /id="clock-seconds"/);
+  assert.match(advancedTimer, /id="objective-time-override"/);
+  assert.match(advancedTimer, /id="objective-undo"/);
+  assert.doesNotMatch(html, /id="objective-seconds"/, "objective countdown has one editable source");
+  assert.match(html, /<button id="objective-start"/);
+  assert.match(html, /<button id="objective-end"/);
+
+  const heroInputs = html.match(/<details class="secondary-inputs">\s*<summary>영웅별 생존 · 부활 · 궁극기<\/summary>([\s\S]*?)<\/details>/)?.[1];
+  assert.match(heroInputs, /id="battle-rosters"/);
+  const recommendationDetails = html.match(/<details class="recommendation-more">([\s\S]*?)<\/details>/)?.[1];
+  assert.ok(html.indexOf('<p id="recommendation"') < html.indexOf('<details class="recommendation-more">'));
+  assert.match(recommendationDetails, /id="execution-condition"/);
+  assert.match(recommendationDetails, /id="alternative"/);
+  assert.ok(html.indexOf('id="fight-result"') < html.indexOf('class="objective-timer"'));
+});
+
+test("quick objective controls preserve start, secure, correction, and undo behavior", () => {
+  const { coach, querySelector } = loadCoachHarness();
+  const state = coach.defaultState();
+  state.phase = "game";
+  state.map = "저주받은 골짜기";
+  state.gameClockSeconds = 240;
+  state.gameClockStartedAt = null;
+  coach.setState(state);
+
+  querySelector("#objective-time-override").value = "05:30";
+  querySelector("#objective-time-set").listeners.click();
+  assert.equal(state.nextObjectiveAtOverride, 330);
+  assert.equal(state.objectiveSeconds, null);
+
+  querySelector("#objective-start").listeners.click();
+  assert.equal(state.objectiveEventStatus, "active");
+  assert.equal(state.objective, "contested");
+  querySelector("#objective-winner").value = "ours";
+  querySelector("#objective-end").listeners.click();
+  assert.equal(state.objectiveEventStatus, "ended");
+  assert.equal(state.objectiveSecuredBy, "ours");
+
+  querySelector("#objective-undo").listeners.click();
+  assert.equal(state.objectiveEventStatus, "active");
+  assert.equal(state.objective, "contested");
+});

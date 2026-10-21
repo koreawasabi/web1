@@ -171,12 +171,15 @@
       .battle-team { min-width: 0; }
       .team-title .team-count { margin-left: auto; color: var(--muted); font-size: .77rem; font-weight: 600; }
       .level-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 14px; }
+      .level-controls > div:only-child { grid-column: 1 / -1; }
+      .level-controls.single-control { grid-template-columns: 1fr; }
       .level-input { width: 100%; }
       .level-stage-summary { margin: -6px 0 14px; color: var(--muted); font-size: .76rem; }
       .objective-timer { margin: 14px 0; padding: 14px; border: 1px solid #455774; border-radius: 12px; background: #111824; }
       .timer-heading, .timer-readout, .timer-controls, .event-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 9px; }
       .timer-clock { color: var(--gold); font-size: 1.5rem; font-variant-numeric: tabular-nums; font-weight: 850; }
-      .timer-status { margin: 6px 0; font-weight: 750; }
+      .timer-heading .timer-readout button { min-height: 38px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #202838; color: var(--text); font-weight: 700; }
+      .timer-status { margin: 6px 0; color: var(--muted); font-size: .8rem; }
       .timer-controls { justify-content: flex-start; margin-top: 10px; }
       .timer-controls button, .event-controls button { min-height: 38px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #202838; color: var(--text); font-weight: 700; }
       .timer-controls button:hover, .event-controls button:hover { border-color: var(--blue); }
@@ -185,12 +188,21 @@
       .event-controls select { width: auto; min-width: 130px; min-height: 38px; padding: 5px 8px; }
       .timer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
       .timer-grid .field-label { margin-bottom: 4px; }
+      .advanced-controls { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 9px; }
+      .advanced-controls > summary { min-height: 36px; display: flex; align-items: center; }
+      .quick-objective-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; margin-top: 10px; }
+      .quick-objective-controls select { min-width: 0; }
+      .quick-objective-controls button { min-height: 40px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 8px; background: #202838; color: var(--text); font-weight: 750; }
+      .quick-objective-controls button:hover { border-color: var(--blue); }
+      .secondary-inputs { margin: 12px 0; border-top: 1px solid var(--line); padding-top: 8px; }
+      .secondary-inputs > summary { min-height: 38px; }
+      .secondary-inputs[open] { margin-bottom: 14px; }
       .objective-options { display: flex; flex-wrap: wrap; gap: 10px 16px; }
       .objective-options label { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; }
       .recommendation { position: sticky; top: 16px; border-color: #455774; background: linear-gradient(145deg, #202d40, #191f2c 72%); }
       .recommendation .card-heading { margin-bottom: 11px; }
       .recommendation-label { color: var(--gold); font-size: .76rem; font-weight: 800; letter-spacing: .1em; }
-      .coach-status { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 12px; }
+      .coach-status { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 0 0 12px; }
       .coach-badge { display: inline-flex; min-height: 25px; align-items: center; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; background: #111824; color: #d4dceb; font-size: .72rem; font-weight: 800; }
       .coach-badge[data-urgency="긴급"] { border-color: #9b454b; background: #53282e; color: #ffb6bb; }
       .coach-badge[data-urgency="주의"] { border-color: #94703c; background: #46371f; color: #ffdf9a; }
@@ -198,13 +210,15 @@
       .coach-badge[data-urgency="준비"] { border-color: #426b8c; background: #1e3a52; color: #a7dcff; }
       .coach-badge[data-urgency="정보 부족"] { border-color: #75633b; background: #39311f; color: #ffe2a0; }
       .coach-diagnosis { margin: 0 0 9px; color: #aab8cc; font-size: .78rem; font-weight: 700; }
+      .recommendation-more { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 9px; }
+      .recommendation-more > summary { min-height: 36px; }
       .survival-summary { display: grid; gap: 6px; margin: 0 0 14px; }
       .survival-team { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; font-size: .82rem; }
       .survival-team strong { font-weight: 800; }
       .survival-team.ours-trailing strong, .survival-team.enemy-leading strong { color: #ff9298; }
       .survival-team.ours-leading strong, .survival-team.enemy-trailing strong { color: #91e6b8; }
       .map-strategy-panel { margin: 14px 0; padding: 13px; border: 1px solid #53627a; border-radius: 11px; background: #111824eF; }
-      .map-strategy-panel h3 { margin: 0; font-size: 1rem; }
+      .map-strategy-panel > summary { min-height: 36px; font-weight: 750; }
       .map-strategy-facts { margin: 7px 0 12px; padding-left: 18px; color: var(--muted); font-size: .76rem; }
       .map-strategy-facts li + li { margin-top: 4px; }
       .map-strategy-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
@@ -238,6 +252,7 @@
       @media (max-width: 850px) {
         .battle-layout { grid-template-columns: minmax(0, 1fr); }
         .recommendation { position: static; }
+        .side-column { order: -1; }
       }
       @media (max-width: 600px) {
         .shell { width: min(100% - 20px, 520px); padding-top: 18px; }
@@ -269,6 +284,8 @@
         .objective-options label { padding: 7px; font-size: .78rem; }
         .timer-adjust, .timer-grid { grid-template-columns: 1fr; }
         .map-strategy-controls { grid-template-columns: 1fr; }
+        .quick-objective-controls { grid-template-columns: 1fr 1fr; }
+        .quick-objective-controls select { grid-column: 1 / -1; }
       }
       @media (max-width: 380px) {
         #battle-rosters { gap: 6px; }
@@ -382,80 +399,96 @@
                 </div>
               </div>
               <p id="level-stage-summary" class="level-stage-summary" role="status" aria-live="polite">양 팀 레벨을 입력하면 게임 단계와 특성 구간 우위를 표시합니다. 특성 구간: 1 · 4 · 7 · 10 · 13 · 16 · 20레벨.</p>
+              <div class="level-controls single-control">
+                <div>
+                  <label class="field-label" for="fight-result">최근 한타 결과</label>
+                  <select id="fight-result">
+                    <option value="unknown">모름 / 입력 안 함</option>
+                    <option value="won">아군 승리</option>
+                    <option value="lost">아군 패배</option>
+                    <option value="even">큰 피해 없이 종료 / 교환</option>
+                  </select>
+                </div>
+              </div>
               <section class="objective-timer" aria-labelledby="objective-timer-heading">
                 <div class="timer-heading">
                   <h3 id="objective-timer-heading">게임 시계 · 오브젝트</h3>
-                  <span id="game-clock" class="timer-clock" aria-live="off">00:00</span>
+                  <div class="timer-readout">
+                    <span id="game-clock" class="timer-clock" aria-live="off">00:00</span>
+                    <button id="clock-pause" type="button">시계 시작 / 재개</button>
+                  </div>
                 </div>
                 <p id="objective-timer-status" class="timer-status" role="status" aria-live="polite"></p>
-                <p id="objective-rule-note" class="hint"></p>
                 <div class="timer-readout">
                   <strong id="objective-countdown">다음 오브젝트 시각 미확인</strong>
                   <span id="objective-event-state" class="subtle">대기</span>
                 </div>
-                <div class="timer-controls">
-                  <button id="clock-pause" type="button">시계 시작</button>
-                  <button id="clock-minus" type="button" aria-label="게임 시계 30초 되돌리기">−30초</button>
-                  <button id="clock-plus" type="button" aria-label="게임 시계 30초 앞으로">+30초</button>
-                </div>
-                <div class="timer-adjust">
-                  <div>
-                    <label class="field-label" for="clock-seconds">게임 시계 보정 (초)</label>
-                    <input id="clock-seconds" type="number" min="0" max="14400" step="1" inputmode="numeric" placeholder="예: 325 = 05:25">
-                  </div>
-                  <button id="clock-set" class="secondary-button" type="button">시각 적용</button>
-                </div>
-                <div class="timer-grid">
-                  <div>
-                    <label class="field-label" for="objective-time-override">다음 오브젝트 시작 시각 보정 (MM:SS)</label>
-                    <input id="objective-time-override" type="text" inputmode="numeric" placeholder="예: 05:30">
-                  </div>
-                  <div>
-                    <label class="field-label" for="previous-objective-end">이전 이벤트 종료 시각 (MM:SS)</label>
-                    <input id="previous-objective-end" type="text" inputmode="numeric" placeholder="예: 04:10">
-                  </div>
+                <div class="quick-objective-controls">
+                  <label class="visually-hidden" for="objective">현재 오브젝트 상황</label>
+                  <select id="objective">
+                    <option value="unknown">오브젝트 상황 미확인</option><option value="soon">곧 생성</option>
+                    <option value="ours">우리 팀 오브젝트 진행 중</option><option value="contested">경합 중</option>
+                    <option value="enemy">상대 팀 오브젝트 진행 중</option><option value="secured">이번 오브젝트 확보</option>
+                  </select>
+                  <button id="objective-start" type="button">시작 / 경합</button>
+                  <button id="objective-end" type="button">오브젝트 종료</button>
                 </div>
                 <div class="event-controls">
-                  <button id="objective-start" type="button">오브젝트 시작</button>
-                  <label class="field-label" for="objective-winner" style="margin:0">결과</label>
+                  <label class="field-label" for="objective-winner" style="margin:0">확보 팀</label>
                   <select id="objective-winner">
                     <option value="unknown">미확인</option>
                     <option value="ours">우리 팀 확보</option>
                     <option value="enemy">상대 팀 확보</option>
                   </select>
-                  <label class="field-label" for="objective-end-kind" style="margin:0">종료 종류</label>
-                  <select id="objective-end-kind">
-                    <option value="normal">일반 종료</option>
-                    <option value="curse">저주 종료</option>
-                  </select>
-                  <button id="objective-end" type="button">오브젝트 종료</button>
-                  <button id="objective-undo" type="button">직전 이벤트 되돌리기</button>
-                  <button id="objective-time-set" type="button">다음 시각 적용</button>
-                  <button id="previous-end-set" type="button">종료 시각 적용</button>
                 </div>
+                <details class="advanced-controls">
+                  <summary>고급 설정 · 시계와 목표 시각 보정</summary>
+                  <p id="objective-rule-note" class="hint"></p>
+                  <div class="timer-controls">
+                    <button id="clock-minus" type="button" aria-label="게임 시계 30초 되돌리기">−30초</button>
+                    <button id="clock-plus" type="button" aria-label="게임 시계 30초 앞으로">+30초</button>
+                  </div>
+                  <div class="timer-adjust">
+                    <div>
+                      <label class="field-label" for="clock-seconds">게임 시계 보정 (초)</label>
+                      <input id="clock-seconds" type="number" min="0" max="14400" step="1" inputmode="numeric" placeholder="예: 325 = 05:25">
+                    </div>
+                    <button id="clock-set" class="secondary-button" type="button">시각 적용</button>
+                  </div>
+                  <div class="timer-grid">
+                    <div>
+                      <label class="field-label" for="objective-time-override">다음 오브젝트 시작 시각 보정 (MM:SS)</label>
+                      <input id="objective-time-override" type="text" inputmode="numeric" placeholder="예: 05:30">
+                    </div>
+                    <div>
+                      <label class="field-label" for="previous-objective-end">이전 이벤트 종료 시각 (MM:SS)</label>
+                      <input id="previous-objective-end" type="text" inputmode="numeric" placeholder="예: 04:10">
+                    </div>
+                    <div>
+                      <label class="field-label" for="objective-end-kind">종료 종류</label>
+                      <select id="objective-end-kind">
+                        <option value="normal">일반 종료</option>
+                        <option value="curse">저주 종료</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p class="hint">게임 시계와 다음 오브젝트 시간은 같은 기준을 사용합니다. 직접 보정한 시작 시각은 MM:SS로 입력하세요.</p>
+                  <div class="event-controls">
+                    <button id="objective-undo" type="button">직전 이벤트 되돌리기</button>
+                    <button id="objective-time-set" type="button">다음 시각 적용</button>
+                    <button id="previous-end-set" type="button">종료 시각 적용</button>
+                  </div>
+                </details>
               </section>
-              <section id="map-strategy-panel" class="map-strategy-panel" aria-labelledby="map-strategy-heading" hidden>
-                <h3 id="map-strategy-heading">맵 고유 목표 상태</h3>
+              <details id="map-strategy-panel" class="map-strategy-panel" aria-labelledby="map-strategy-heading" hidden>
+                <summary id="map-strategy-heading">맵 고유 목표 상태</summary>
                 <ul id="map-strategy-facts" class="map-strategy-facts"></ul>
                 <div id="map-strategy-controls" class="map-strategy-controls"></div>
                 <p class="hint">상태를 모르면 미확인으로 두세요. 변경 즉시 추천에 반영됩니다.</p>
-              </section>
-              <div class="level-controls">
-                <div style="grid-column:1 / -1">
-                  <label class="field-label" for="objective">오브젝트 상황</label>
-                  <select id="objective">
-                    <option value="unknown">모름 / 판단 전</option><option value="soon">곧 생성</option>
-                    <option value="ours">우리 팀 오브젝트 진행 중</option><option value="contested">경합 중</option>
-                    <option value="enemy">상대 팀 오브젝트 진행 중</option><option value="secured">이번 오브젝트 확보</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="field-label" for="objective-seconds">오브젝트까지 남은 시간 (초)</label>
-                  <input id="objective-seconds" type="number" min="0" max="600" step="1" inputmode="numeric" placeholder="모르면 비워두기">
-                  <p class="hint">진행 중이면 0초. 위치·이동 시간은 반영하지 않습니다.</p>
-                </div>
-              </div>
-              <div class="level-controls">
+              </details>
+              <details class="secondary-inputs">
+                <summary>캠프·라인 교환 정보</summary>
+                <div class="level-controls">
                 <div>
                   <label class="field-label" for="camp-status">가까운 용병 캠프</label>
                   <select id="camp-status">
@@ -474,34 +507,19 @@
                     <option value="none">안전한 교환 어려움</option>
                   </select>
                 </div>
-              </div>
-              <div class="level-controls">
-                <div>
-                  <label class="field-label" for="fight-result">최근 한타 결과</label>
-                  <select id="fight-result">
-                    <option value="unknown">모름 / 입력 안 함</option>
-                    <option value="won">아군 승리</option>
-                    <option value="lost">아군 패배</option>
-                    <option value="even">큰 피해 없이 종료 / 교환</option>
-                  </select>
-                  <p class="hint">교전 결과를 선택하면 킬 이후 행동 판단에 반영합니다.</p>
                 </div>
-              </div>
+              </details>
               <p id="match-summary" class="hint"></p>
-              <div id="battle-rosters"></div>
+              <details class="secondary-inputs">
+                <summary>영웅별 생존 · 부활 · 궁극기</summary>
+                <div id="battle-rosters"></div>
+              </details>
             </section>
           </div>
           <aside class="side-column">
             <section class="card recommendation" aria-labelledby="recommend-heading">
               <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
               <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
-              <div class="coach-status" aria-label="추천 분류">
-                <span id="urgency" class="coach-badge" data-urgency="정보 부족">정보 부족</span>
-                <span id="recommendation-category" class="coach-badge">운영</span>
-                <span id="evidence-level" class="coach-badge">근거 제한</span>
-              </div>
-              <p id="diagnosis" class="coach-diagnosis"></p>
-              <div id="survival-summary" class="survival-summary" aria-live="polite"></div>
               <div class="reason">
                 <strong>최우선 행동</strong>
                 <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
@@ -510,27 +528,37 @@
                 <strong>판단 근거</strong>
                 <p id="reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
               </div>
-              <div class="reason">
-                <strong>실행 조건</strong>
-                <p id="execution-condition"></p>
-              </div>
-              <div class="reason">
-                <strong>대안</strong>
-                <p id="alternative"></p>
-              </div>
-              <div class="reason">
-                <strong>예상 이득 · 위험</strong>
-                <p id="expected-outcome"></p>
-              </div>
               <div class="warning">
                 <strong>주의 사항</strong>
                 <p id="warning-text"></p>
               </div>
-              <details>
-                <summary>상세 분석 보기</summary>
-                <ul id="analysis" class="analysis"></ul>
+              <details class="recommendation-more">
+                <summary>전황 요약 및 실행 세부 정보</summary>
+                <div class="coach-status" aria-label="추천 분류">
+                  <span id="urgency" class="coach-badge" data-urgency="정보 부족">정보 부족</span>
+                  <span id="recommendation-category" class="coach-badge">운영</span>
+                  <span id="evidence-level" class="coach-badge">근거 제한</span>
+                </div>
+                <p id="diagnosis" class="coach-diagnosis"></p>
+                <div id="survival-summary" class="survival-summary" aria-live="polite"></div>
+                <div class="reason">
+                  <strong>실행 조건</strong>
+                  <p id="execution-condition"></p>
+                </div>
+                <div class="reason">
+                  <strong>대안</strong>
+                  <p id="alternative"></p>
+                </div>
+                <div class="reason">
+                  <strong>예상 이득 · 위험</strong>
+                  <p id="expected-outcome"></p>
+                </div>
+                <details>
+                  <summary>상세 분석 보기</summary>
+                  <ul id="analysis" class="analysis"></ul>
+                </details>
+                <p class="coach-limit">궁극기 참고는 일부 영웅의 교전 영향 잠재력에 대한 추정입니다. 선택한 궁극기와 실제 재사용 대기시간은 확인하지 않습니다.</p>
               </details>
-              <p class="coach-limit">궁극기 참고는 일부 영웅의 교전 영향 잠재력에 대한 추정입니다. 선택한 궁극기와 실제 재사용 대기시간은 확인하지 않습니다.</p>
             </section>
             <section class="card">
               <h2>사용 안내</h2>
@@ -1070,10 +1098,6 @@
           }
           const clockInput = document.querySelector("#clock-seconds");
           if (document.activeElement !== clockInput) clockInput.value = String(now);
-          const remainingInput = document.querySelector("#objective-seconds");
-          if (document.activeElement !== remainingInput) {
-            remainingInput.value = timer.phase === "active" ? "0" : timer.minRemaining ?? "";
-          }
           const nextTimeInput = document.querySelector("#objective-time-override");
           if (document.activeElement !== nextTimeInput) {
             nextTimeInput.value = Number.isInteger(state.nextObjectiveAtOverride)
@@ -2121,25 +2145,6 @@
           updateRecommendation();
           persist();
         });
-        const updateObjectiveSeconds = (event) => {
-          const input = event.target;
-          const raw = input.value.trim();
-          const seconds = raw === "" ? null : Number(raw);
-          if (input.validity.badInput || (raw !== "" && (!Number.isInteger(seconds) || seconds < 0 || seconds > 600))) {
-            input.setCustomValidity("오브젝트까지 남은 시간은 0부터 600 사이의 정수로 입력해 주세요.");
-            if (event.type === "change") input.reportValidity();
-            return;
-          }
-          input.setCustomValidity("");
-          state.objectiveSeconds = seconds;
-          state.nextObjectiveAtOverride = seconds === null ? null : gameTimeSeconds() + seconds;
-          if (seconds !== null && state.objective === "unknown") state.objective = "soon";
-          renderObjectiveTimer();
-          updateRecommendation();
-          persist();
-        };
-        document.querySelector("#objective-seconds").addEventListener("input", updateObjectiveSeconds);
-        document.querySelector("#objective-seconds").addEventListener("change", updateObjectiveSeconds);
         for (const [id, key] of [["camp-status", "campStatus"], ["lane-trade", "laneTrade"]]) {
           document.querySelector(`#${id}`).addEventListener("change", (event) => {
             state[key] = event.target.value;
@@ -2198,8 +2203,8 @@
           input.setCustomValidity("");
           saveObjectiveHistory();
           state.nextObjectiveAtOverride = target;
+          state.objectiveSeconds = null;
           if (target !== null) {
-            state.objectiveSeconds = null;
             if (state.objective === "unknown") state.objective = "soon";
           }
           renderObjectiveTimer();
