@@ -57,11 +57,18 @@ function loadCoachHarness() {
     activeElement: null,
     body: { style: { setProperty() {}, removeProperty() {} } }
   };
-  const window = { setInterval() {}, confirm: () => true, scrollTo() {} };
+  let confirmResult = true;
+  let confirmCalls = 0;
+  const window = {
+    setInterval() {},
+    confirm() { confirmCalls += 1; return confirmResult; },
+    scrollTo() {}
+  };
+  const storage = { value: null, getItem: () => null, setItem(_key, value) { this.value = value; } };
   const context = {
     document,
     window,
-    localStorage: { getItem: () => null, setItem() {} },
+    localStorage: storage,
     console,
     Date
   };
@@ -76,7 +83,13 @@ function loadCoachHarness() {
   const instrumented = inlineScript.replace("        loadState();", hook);
   assert.notEqual(instrumented, inlineScript, "test hook insertion point exists");
   vm.runInContext(instrumented, context, { filename: "index.html" });
-  return { coach: window.__coachTest, querySelector };
+  return {
+    coach: window.__coachTest,
+    querySelector,
+    storage,
+    setConfirmResult(value) { confirmResult = value; },
+    getConfirmCalls() { return confirmCalls; }
+  };
 }
 
 test("Cursed Hollow changes from ordinary objective handling to third-tribute contest", () => {
@@ -237,4 +250,25 @@ test("old saved state restores with empty map strategy values and keeps legacy t
   assert.equal(restored.mapStrategy["저주받은 골짜기"].oursTributes, null);
   assert.equal(restored.mapStrategy["용의 둥지"].topShrine, "unknown");
   assert.equal(restored.nextObjectiveAtOverride, 45);
+});
+
+test("random draft creates unique heroes, persists, and protects an existing draft from cancellation", () => {
+  const { coach, querySelector, storage, setConfirmResult, getConfirmCalls } = loadCoachHarness();
+  const state = coach.defaultState();
+  coach.setState(state);
+  const generate = querySelector("#random-draft").listeners.click;
+
+  generate();
+  const chosen = Object.values(state.draft).flat();
+  assert.equal(chosen.length, 16);
+  assert.ok(chosen.every(Boolean));
+  assert.equal(new Set(chosen).size, 16);
+  assert.equal(getConfirmCalls(), 0);
+  assert.ok(storage.value);
+
+  const previousDraft = JSON.stringify(state.draft);
+  setConfirmResult(false);
+  generate();
+  assert.equal(JSON.stringify(state.draft), previousDraft);
+  assert.equal(getConfirmCalls(), 1);
 });

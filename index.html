@@ -356,6 +356,7 @@
           </div>
           <p id="draft-status" class="draft-status" role="status" aria-live="polite"></p>
           <div class="draft-actions">
+            <button id="random-draft" class="secondary-button" type="button">테스트용 랜덤 밴픽 생성</button>
             <button id="start-match" class="primary-button" type="button">게임 중 전황 입력 →</button>
           </div>
         </section>
@@ -2041,6 +2042,21 @@
           state.draft[activeSlot.key][activeSlot.index] = option.dataset.hero;
           activeSlot = null;
           heroDialog.close();
+          render();
+          persist();
+        });
+        document.querySelector("#random-draft").addEventListener("click", () => {
+          const hasExistingDraft = Object.values(state.draft).flat().some(Boolean);
+          if (hasExistingDraft && !window.confirm("현재 밴픽을 모두 랜덤 밴픽으로 바꿀까요?")) return;
+          const availableHeroes = [...heroList];
+          for (let index = availableHeroes.length - 1; index > 0; index -= 1) {
+            const swapIndex = Math.floor(Math.random() * (index + 1));
+            [availableHeroes[index], availableHeroes[swapIndex]] = [availableHeroes[swapIndex], availableHeroes[index]];
+          }
+          let heroIndex = 0;
+          for (const [key, config] of Object.entries(slots)) {
+            state.draft[key] = Array.from({ length: config.count }, () => availableHeroes[heroIndex++]);
+          }
           render();
           persist();
         });
