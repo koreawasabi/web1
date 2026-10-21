@@ -195,6 +195,7 @@
       .reason { margin: 12px 0 0; }
       .reason strong, .warning strong { display: block; margin-bottom: 3px; color: var(--muted); font-size: .72rem; letter-spacing: .04em; }
       .reason p { margin: 0; color: #edf2fa; font-size: .96rem; font-weight: 600; }
+      .reason .action { font-size: clamp(1.45rem, 3vw, 2.1rem); font-weight: 850; line-height: 1.2; letter-spacing: -.04em; }
       .warning { margin: 12px 0 0; padding: 9px 11px; border-left: 3px solid var(--gold); border-radius: 5px; background: #ffd16612; color: #ffe2a0; font-size: .82rem; }
       .warning strong { color: #ffe2a0; }
       .warning p { margin: 0; }
@@ -389,6 +390,18 @@
                   </select>
                 </div>
               </div>
+              <div class="level-controls">
+                <div>
+                  <label class="field-label" for="fight-result">최근 한타 결과</label>
+                  <select id="fight-result">
+                    <option value="unknown">모름 / 입력 안 함</option>
+                    <option value="won">아군 승리</option>
+                    <option value="lost">아군 패배</option>
+                    <option value="even">큰 피해 없이 종료 / 교환</option>
+                  </select>
+                  <p class="hint">교전 결과를 선택하면 킬 이후 행동 판단에 반영합니다.</p>
+                </div>
+              </div>
               <p id="match-summary" class="hint"></p>
               <div id="battle-rosters"></div>
             </section>
@@ -404,13 +417,24 @@
               </div>
               <p id="diagnosis" class="coach-diagnosis"></p>
               <div id="survival-summary" class="survival-summary" aria-live="polite"></div>
-              <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
+              <div class="reason">
+                <strong>최우선 행동</strong>
+                <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
+              </div>
               <div class="reason">
                 <strong>판단 근거</strong>
                 <p id="reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
               </div>
-              <div id="warning" class="warning" hidden>
-                <strong>주의</strong>
+              <div class="reason">
+                <strong>실행 조건</strong>
+                <p id="execution-condition"></p>
+              </div>
+              <div class="reason">
+                <strong>대안</strong>
+                <p id="alternative"></p>
+              </div>
+              <div class="warning">
+                <strong>주의 사항</strong>
                 <p id="warning-text"></p>
               </div>
               <details>
@@ -582,7 +606,7 @@
             team, Array.from({ length: 5 }, () => ({ hero: "", alive: true, respawn: null, ultimate: "unknown" }))
           ])),
           oursLevel: null, enemyLevel: null, objective: "unknown", objectiveSeconds: null,
-          campStatus: "unknown", laneTrade: "unknown"
+          campStatus: "unknown", laneTrade: "unknown", fightResult: "unknown"
         });
         const saveState = document.querySelector("#save-state");
         const heroDialog = document.querySelector("#hero-dialog");
@@ -613,6 +637,7 @@
           if (value.objective && ["unknown", "soon", "ours", "contested", "enemy", "secured"].includes(value.objective)) fresh.objective = value.objective;
           if (["unknown", "available", "contested", "cleared"].includes(value.campStatus)) fresh.campStatus = value.campStatus;
           if (["unknown", "wave", "structure", "none"].includes(value.laneTrade)) fresh.laneTrade = value.laneTrade;
+          if (["unknown", "won", "lost", "even"].includes(value.fightResult)) fresh.fightResult = value.fightResult;
           for (const team of ["ours", "enemy"]) {
             if (Array.isArray(value.battle?.[team])) {
               fresh.battle[team] = Array.from({ length: 5 }, (_, i) => {
@@ -943,7 +968,12 @@
           const enemyDead = enemy.filter((member, index) =>
             (pickedHero("enemy", index) || member.hero) && !member.alive
           ).length;
-          const killAdvantage = enemyDead > oursDead && enemyDead > 0;
+          const killAdvantage = !["lost", "even"].includes(state.fightResult) && enemyDead > oursDead && enemyDead > 0;
+          const inferredFightResult = state.fightResult !== "unknown"
+            ? state.fightResult
+            : enemyDead - oursDead >= 2 ? "won" : oursDead - enemyDead >= 2 ? "lost" : "unknown";
+          const objectiveIsNear = objectiveActive && Number.isInteger(state.objectiveSeconds) && state.objectiveSeconds <= 45;
+          const objectiveIsFar = objectiveActive && Number.isInteger(state.objectiveSeconds) && state.objectiveSeconds >= 90;
           const ultimateSummary = (team) => state.battle[team].reduce((summary, member, index) => {
             const hero = pickedHero(team, index) || member.hero;
             if (!hero) return summary;
@@ -975,7 +1005,10 @@
             `오브젝트: ${objectiveLabels[state.objective]}${rallyTimingKnown ? ` · ${state.objectiveSeconds}초 후` : ""}`
           ];
           if (oursDead || enemyDead) {
-            lines.push(`확인된 사망: 우리 팀 ${oursDead}명 · 상대 ${enemyDead}명${killAdvantage ? " · 킬 이후 압박 기회" : ""}`);
+            const fightLabel = { won: "아군 우세 추정", lost: "아군 열세 추정", even: "큰 피해 없는 교전", unknown: "결과 미확인" }[inferredFightResult];
+            lines.push(`최근 교전: ${fightLabel} · 확인된 사망 우리 ${oursDead}명 / 상대 ${enemyDead}명${killAdvantage ? " · 킬 이후 압박 기회" : ""}`);
+          } else if (state.fightResult !== "unknown") {
+            lines.push(`최근 교전: ${{won:"아군 승리로 입력",lost:"아군 패배로 입력",even:"큰 피해 없이 종료로 입력"}[state.fightResult]}`);
           }
           lines.push(`캠프: ${{unknown:"미확인",available:"안전하게 점령 가능",contested:"경합/위험",cleared:"이미 점령/이용 불가"}[state.campStatus]} · 라인 교환: ${{unknown:"미확인",wave:"웨이브 정리",structure:"구조물 압박",none:"안전한 교환 어려움"}[state.laneTrade]}`);
           if (oursRally && enemyRally) {
@@ -1003,9 +1036,11 @@
           }
           lines.push(`교전 영향 궁극기 참고 점수: 우리 ${oursUltimates.readyImpact} · 상대 ${enemyUltimates.readyImpact} (일부 영웅만 집계)`);
           const base = {
-            action: "전황을 더 입력한 뒤 합류 여부를 판단하세요",
+            action: "안전한 라인 경험치를 챙기며 전황을 확인하세요",
             reason: "현재 정보만으로는 안전한 교전이나 오브젝트 합류를 확정하기 어렵습니다.",
-            warning: uncertaintyWarning,
+            warning: [uncertaintyWarning, "위치·이동 시간은 입력되지 않아 합류 가능성을 확정할 수 없습니다."].filter(Boolean).join(" "),
+            executionCondition: "아군이 안전하게 닿을 수 있는 라인만 정리하고, 적 위치가 확인되지 않으면 깊게 전진하지 마세요.",
+            alternative: "라인이 위험하거나 경험치 손실이 작다면 팀과 합류 가능한 위치로 물러나 재정비하세요.",
             urgency: "정보 부족",
             category: "기본 운영",
             diagnosis: missingInfo.length ? `확인 필요 · ${missingInfo.slice(0, 3).join(" · ")}` : "전황 입력 반영",
@@ -1014,7 +1049,7 @@
             oursRally,
             enemyRally
           };
-          const set = (action, reason, warning = "") => {
+          const set = (action, reason, warning = "", guidance = {}) => {
             let urgency = "기본";
             if (oursPossibleAlive <= 2 && oursPossibleAlive < enemyAlive) urgency = "긴급";
             else if (largeRallyDisadvantage || levelDisadvantage || (state.objective === "enemy" && !confirmedRallyAdvantage)) urgency = "주의";
@@ -1035,11 +1070,38 @@
               : levelDisadvantage || levelAdvantage
                 ? "레벨·라인 운영"
                 : "교전·라인 운영";
+            const executionCondition = guidance.executionCondition || (
+              action.includes("오브젝트")
+                ? `오브젝트까지 ${Number.isInteger(state.objectiveSeconds) ? `${state.objectiveSeconds}초` : "남은 시간 미확인"}. 부활 시간과 예상 합류 인원을 확인한 뒤 이동하세요. 영웅 위치·이동 거리는 반영되지 않았습니다.`
+                : action.includes("캠프")
+                  ? "가까운 캠프가 안전하게 점령 가능하고, 최소 3명의 확정 생존 아군이 함께할 때 시작하세요. 적 위치가 보이지 않으면 중단하세요."
+                  : action.includes("구조물")
+                    ? "아군이 안전하게 압박할 수 있고 적의 합류가 확인되지 않을 때만 진행하세요. 적이 사라지거나 아군이 갈라지면 중단하세요."
+                    : action.includes("웨이브") || action.includes("라인")
+                      ? "확인된 안전한 라인만 정리하고 적 위치가 확인되지 않으면 구조물 쪽으로 더 전진하지 마세요."
+                      : "아군 생존과 적 위치를 다시 확인하고, 숫자 우위가 사라지면 교전을 멈추세요."
+            );
+            const alternative = guidance.alternative || (
+              action.includes("오브젝트")
+                ? state.laneTrade === "structure" ? "합류가 늦거나 인원이 부족하면 반대편 구조물을 짧게 압박하고 즉시 이탈하세요."
+                  : state.campStatus === "available" ? "합류가 늦거나 경합이 불리하면 안전한 용병 캠프를 점령하세요."
+                    : state.laneTrade === "wave" ? "합류가 늦으면 반대 라인 경험치를 챙기고 다음 합류 시점을 보세요."
+                      : "합류할 수 없다면 무리한 진입 대신 안전한 라인 경험치를 챙기세요."
+                : state.campStatus === "available" && !action.includes("캠프")
+                  ? "캠프가 안전하게 열려 있으면 점령해 지도 압박을 보태세요."
+                  : state.laneTrade === "wave" ? "교전을 이어가기 어렵다면 안전한 웨이브를 정리하고 재합류하세요."
+                    : "위험이 커지면 팀과 함께 후퇴해 다음 오브젝트를 준비하세요."
+            );
+            const caution = guidance.caution || warning || (
+              "추천은 입력된 전황 기준입니다. 적 위치, 캠프 이동 시간, 실제 합류 경로는 확인하지 못합니다."
+            );
             return {
               ...base,
               action,
               reason,
-              warning: [warning, uncertaintyWarning].filter(Boolean).join(" "),
+              warning: [caution, uncertaintyWarning].filter(Boolean).join(" "),
+              executionCondition,
+              alternative,
               urgency,
               category,
               diagnosis: oursRally
@@ -1062,18 +1124,12 @@
             return null;
           };
 
-          // Priority: immediate survival, confirmed rally timing, talent disadvantage, objective state, then ultimate tie-breakers.
+          // Priority: immediate survival, decisive objective timing, post-fight trade, then talent and ultimate context.
           if (oursPossibleAlive <= 2 && oursPossibleAlive < enemyAlive) {
             return set("후퇴해 시간을 버세요", "우리 팀 생존 인원이 적어 정면 교전에서 수적 열세입니다.", "아군이 다시 합류할 때까지 오브젝트 경합과 깊은 진입을 피하세요.");
           }
           if (objectiveActive && largeRallyDisadvantage && ["contested", "enemy", "soon"].includes(state.objective)) {
             return set("이번 오브젝트 정면 경합은 피하세요", `오브젝트 시 우리 팀은 최대 ${oursRally.maximum}명, 상대는 최소 ${enemyRally.confirmed}명이 합류할 수 있어 불리합니다.`, "사망한 아군의 부활 시간을 확인하고, 합류가 늦으면 라인·구조물 교환을 우선하세요.");
-          }
-          if (levelDisadvantage && state.objective !== "secured") {
-            const reason = talentDifference < 0
-              ? `상대 팀은 ${enemyLevelInfo.talentLevel}레벨 특성을 확보했지만 우리 팀은 ${oursLevelInfo.talentLevel}레벨 구간입니다.`
-              : `우리 팀이 레벨에서 ${Math.abs(levelDifference)}만큼 뒤처져 있습니다.`;
-            return set("특성 구간을 맞추며 불리한 교전을 피하세요", `${reason} 라인 경험치를 챙겨 다음 특성 구간에 합류하세요.`, "오브젝트가 이미 시작됐다면 인원과 진입 경로를 확인하고, 특성 열세 상태의 정면 교전은 신중히 판단하세요.");
           }
           if (state.objective === "enemy") {
             if (confirmedRallyAdvantage && !levelDisadvantage) {
@@ -1085,6 +1141,10 @@
           }
           if (state.objective === "contested") {
             const confirmedEvenOrBetter = oursRally && enemyRally && oursRally.confirmed >= enemyRally.maximum;
+            if (objectiveIsFar && (killAdvantage || inferredFightResult === "won")) {
+              const trade = safeTrade("오브젝트까지 시간이 남아 있고 아군이 한타에서 이겨");
+              if (trade) return trade;
+            }
             if ((confirmedRallyAdvantage || confirmedEvenOrBetter) && !levelDisadvantage) {
               const ultimateReason = ultimateAdvantage ? " 입력된 궁극기 중 교전 영향도가 높은 영웅의 사용 가능 상태도 우위입니다." : "";
               return set("팀을 모아 오브젝트에 합류하세요", isLateGame
@@ -1105,6 +1165,19 @@
             return set("오브젝트를 안전하게 마무리하세요", "우리 팀이 진행 중입니다. 상대의 진입 경로를 살피며 흩어지지 마세요.");
           }
           if (state.objective === "soon") {
+            if (objectiveIsFar && (killAdvantage || inferredFightResult === "won")) {
+              const context = killAdvantage
+                ? `상대 ${enemyDead}명이 우리 ${oursDead}명보다 더 많이 사망했고 오브젝트까지 ${state.objectiveSeconds}초 남아 있어`
+                : `아군이 한타에서 이겼고 오브젝트까지 ${state.objectiveSeconds}초 남아 있어`;
+              const trade = safeTrade(context);
+              if (trade) {
+                trade.executionCondition = `오브젝트는 ${state.objectiveSeconds}초 후입니다. 캠프·라인 교환을 짧게 마치고, 남은 시간이 45초가 되기 전 합류를 시작하세요. 실제 이동 시간과 위치는 알 수 없으므로 더 일찍 복귀할 수 있습니다.`;
+                return trade;
+              }
+            }
+            if (objectiveIsNear) {
+              return set("지금 팀과 합류해 오브젝트 진입을 준비하세요", `오브젝트까지 ${state.objectiveSeconds}초 남았습니다. 부활 후 예상 합류 인원과 진입 경로를 확인한 뒤 함께 움직이세요.`);
+            }
             return set("예상 합류 인원을 확인해 미리 모이세요", isEarlyGame
               ? "오브젝트 생성 전 합류 위치를 확인하되, 초반 라인 경험치를 오래 비우지 않도록 팀 이동 타이밍을 맞추세요."
               : isLateGame
@@ -1119,8 +1192,63 @@
             }
             return set("오브젝트 이득을 활용해 라인을 정리하세요", "이번 오브젝트는 확보했습니다. 다음 목표를 준비하며 불필요한 추격을 삼가세요.");
           }
+          if (inferredFightResult === "lost") {
+            const safeWave = state.laneTrade === "wave" && oursAlive >= 3;
+            return set(
+              safeWave ? "안전한 라인 경험치만 챙기고 재정비하세요" : "추가 교전을 끊고 팀과 함께 후퇴하세요",
+              state.fightResult === "lost"
+                ? "최근 한타에서 아군이 패배했다고 입력했습니다. 추가 진입보다 생존과 다음 합류를 우선합니다."
+                : `현재 사망 입력에서 우리 팀 ${oursDead}명, 상대 ${enemyDead}명이 확인되어 교전 열세로 추정합니다.`,
+              "적 위치가 확인되지 않으면 캠프나 구조물로 더 들어가지 마세요.",
+              {
+                executionCondition: safeWave
+                  ? "3명 이상 생존해 있고 웨이브가 안전한 위치에 있을 때만 빠르게 정리한 뒤 후퇴하세요."
+                  : "생존 아군이 함께 움직일 수 있을 때 후퇴하고, 고립된 팀원을 구하려고 재진입하지 마세요.",
+                alternative: "라인이 위험하면 경험치를 포기하고 안전한 구조물 뒤에서 재정비하세요.",
+                caution: "패배 직후에는 추가 사망이 오브젝트와 구조물 손실로 이어질 수 있습니다."
+              }
+            );
+          }
+          if (inferredFightResult === "even") {
+            if (state.laneTrade === "wave" && oursAlive >= 3) {
+              return set("교전을 멈추고 안전한 라인 경험치를 챙기세요", "큰 사상자 없이 교전이 끝났습니다. 같은 조건의 재교전보다 웨이브를 정리해 다음 특성 구간을 준비하는 편이 낫습니다.");
+            }
+            if (state.campStatus === "available" && oursAlive >= 3) {
+              return set("교전을 멈추고 가까운 캠프를 점령하세요", "큰 피해 없이 교전이 종료됐고 캠프가 안전하게 열려 있습니다. 불필요한 추격 대신 지도 압박을 확보하세요.");
+            }
+            return set("각 팀을 재정비하고 다음 목표를 준비하세요", "큰 피해 없는 교전은 확정적인 킬·인원 우위가 아닙니다. 체력과 궁극기 상태를 확인하기 전 재교전을 피하세요.");
+          }
+          if (objectiveIsFar && (killAdvantage || inferredFightResult === "won")) {
+            const context = killAdvantage
+              ? `한타 이후 상대 ${enemyDead}명이 우리 ${oursDead}명보다 더 많이 사망했고 오브젝트까지 ${state.objectiveSeconds}초 남아 있어`
+              : `아군이 한타에서 이겼다고 입력했고 오브젝트까지 ${state.objectiveSeconds}초 남아 있어`;
+            const trade = safeTrade(context);
+            if (trade) {
+              trade.executionCondition = `캠프 또는 라인 교환을 짧게 수행하고, 오브젝트까지 45초가 남기 전에 합류를 시작하세요. 위치와 이동 시간은 입력되지 않아 여유 시간을 보장할 수 없습니다.`;
+              return trade;
+            }
+          }
+          if (inferredFightResult === "won") {
+            const trade = safeTrade("아군이 최근 한타에서 이겼지만 즉시 합류할 오브젝트 우위는 확인되지 않아");
+            if (trade) return trade;
+            return set(
+              "추격을 멈추고 안전한 라인 이득을 확보하세요",
+              "한타 승리는 입력됐지만 캠프 상태와 안전한 교환 정보가 부족합니다. 승리를 추가 교전으로 이어갈 수 있다고 단정하지 않습니다.",
+              "적 위치와 오브젝트 시점을 확인하기 전에는 구조물이나 캠프로 깊게 들어가지 마세요.",
+              {
+                executionCondition: "아군이 함께 있고 안전이 확인된 웨이브만 정리한 뒤, 다음 오브젝트 시점에 맞춰 재합류하세요.",
+                alternative: "안전한 라인이 없으면 팀과 함께 후퇴해 체력·궁극기를 회복하세요.",
+                caution: "상대 생존 인원과 위치가 확인되지 않아 한타 승리만으로 추가 압박을 보장할 수 없습니다."
+              }
+            );
+          }
           if (enemyPossibleAlive <= 2 && oursAlive >= enemyPossibleAlive + 2) {
             return set("가까운 안전한 목표를 함께 확보하세요", "상대 팀의 생존 인원이 적습니다. 무리한 추격보다 가까운 목표가 안전합니다.");
+          }
+          if (killAdvantage) {
+            const postKill = safeTrade(`상대 ${enemyDead}명이 더 많이 사망한 지금`);
+            if (postKill) return postKill;
+            return set("상대 부활 전 안전 목표를 선택하세요", `확인된 사망 인원은 우리 ${oursDead}명, 상대 ${enemyDead}명입니다. 추격보다 가까운 캠프·라인·구조물에서 확실한 이득을 고르세요.`, "캠프 상태와 안전한 라인 교환 가능성을 입력하면 목표를 더 구체적으로 추천할 수 있습니다.");
           }
           if (ultimateAdvantage && !levelDisadvantage && oursAlive >= enemyPossibleAlive) {
             return set("궁극기 준비된 팀원을 모아 유리한 교전을 찾으세요", `입력된 상태와 일부 영웅별 영향도 추정에서 우리 팀의 교전 궁극기 점수가 ${oursUltimates.readyImpact} 대 ${enemyUltimates.readyImpact}로 높습니다.`, "궁극기 선택과 실제 재사용 대기시간은 입력되지 않아 영웅별 점수는 참고치입니다.");
@@ -1128,10 +1256,11 @@
           if (ultimateDisadvantage && !levelAdvantage && oursPossibleAlive <= enemyAlive) {
             return set("상대 궁극기 사용을 확인하고 교전을 늦추세요", `입력된 상태와 일부 영웅별 영향도 추정에서 상대 팀의 교전 궁극기 점수가 ${enemyUltimates.readyImpact} 대 ${oursUltimates.readyImpact}로 높습니다.`, "궁극기 선택과 실제 재사용 대기시간은 입력되지 않아 영웅별 점수는 참고치입니다.");
           }
-          if (killAdvantage) {
-            const postKill = safeTrade(`상대 ${enemyDead}명이 더 많이 사망한 지금`);
-            if (postKill) return postKill;
-            return set("상대 부활 전 안전 목표를 선택하세요", `확인된 사망 인원은 우리 ${oursDead}명, 상대 ${enemyDead}명입니다. 추격보다 가까운 캠프·라인·구조물에서 확실한 이득을 고르세요.`, "캠프 상태와 안전한 라인 교환 가능성을 입력하면 목표를 더 구체적으로 추천할 수 있습니다.");
+          if (levelDisadvantage && state.objective !== "secured") {
+            const reason = talentDifference < 0
+              ? `상대 팀은 ${enemyLevelInfo.talentLevel}레벨 특성을 확보했지만 우리 팀은 ${oursLevelInfo.talentLevel}레벨 구간입니다.`
+              : `우리 팀이 레벨에서 ${Math.abs(levelDifference)}만큼 뒤처져 있습니다.`;
+            return set("특성 구간을 맞추며 불리한 교전을 피하세요", `${reason} 안전한 라인 경험치를 챙겨 다음 특성 구간에 합류하세요.`, "특성 열세 상태에서는 정면 교전을 피하고, 캠프도 적 위치를 확인한 경우에만 시작하세요.");
           }
           if (oursAlive >= enemyPossibleAlive + 2) {
             return set("가까운 목표를 함께 압박하세요", "생존 인원 우위가 있습니다. 흩어지지 말고 가까운 라인이나 구조물을 압박하세요.");
@@ -1195,9 +1324,9 @@
           document.querySelector("#diagnosis").textContent = recommendation.diagnosis;
           document.querySelector("#recommendation").textContent = recommendation.action;
           document.querySelector("#reason").textContent = recommendation.reason;
-          const warning = document.querySelector("#warning");
+          document.querySelector("#execution-condition").textContent = recommendation.executionCondition;
+          document.querySelector("#alternative").textContent = recommendation.alternative;
           document.querySelector("#warning-text").textContent = recommendation.warning;
-          warning.hidden = !recommendation.warning;
           document.querySelector("#analysis").innerHTML = recommendation.analysis.map((line) => `<li>${line}</li>`).join("");
         }
 
@@ -1220,6 +1349,7 @@
           document.querySelector("#objective-seconds").value = state.objectiveSeconds ?? "";
           document.querySelector("#camp-status").value = state.campStatus;
           document.querySelector("#lane-trade").value = state.laneTrade;
+          document.querySelector("#fight-result").value = state.fightResult;
           document.querySelector("#ours-level").value = state.oursLevel ?? "";
           document.querySelector("#enemy-level").value = state.enemyLevel ?? "";
           renderLevelSummary();
@@ -1319,6 +1449,11 @@
             persist();
           });
         }
+        document.querySelector("#fight-result").addEventListener("change", (event) => {
+          state.fightResult = event.target.value;
+          updateRecommendation();
+          persist();
+        });
         document.querySelector("#reset").addEventListener("click", () => {
           if (!window.confirm("밴픽과 전황 입력을 모두 초기화할까요?")) return;
           state = defaultState();
