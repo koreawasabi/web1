@@ -203,6 +203,18 @@
       .survival-team strong { font-weight: 800; }
       .survival-team.ours-trailing strong, .survival-team.enemy-leading strong { color: #ff9298; }
       .survival-team.ours-leading strong, .survival-team.enemy-trailing strong { color: #91e6b8; }
+      .map-strategy-panel { margin: 14px 0; padding: 13px; border: 1px solid #53627a; border-radius: 11px; background: #111824eF; }
+      .map-strategy-panel h3 { margin: 0; font-size: 1rem; }
+      .map-strategy-facts { margin: 7px 0 12px; padding-left: 18px; color: var(--muted); font-size: .76rem; }
+      .map-strategy-facts li + li { margin-top: 4px; }
+      .map-strategy-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+      .map-strategy-control { display: grid; gap: 5px; }
+      .map-strategy-count { display: flex; align-items: center; gap: 6px; }
+      .map-strategy-count output { min-width: 28px; text-align: center; font-weight: 800; }
+      .map-strategy-count button { min-width: 36px; min-height: 36px; padding: 0; }
+      .map-strategy-controls select { width: 100%; min-width: 0; }
+      .strategy-outcome { margin: 12px 0 0; padding-top: 9px; border-top: 1px solid var(--line); color: #d7e0ef; font-size: .8rem; }
+      .strategy-outcome strong { color: var(--gold); }
       .action { margin: 0; padding-left: 12px; border-left: 4px solid var(--blue); font-size: clamp(1.45rem, 3vw, 2.1rem); font-weight: 850; line-height: 1.2; letter-spacing: -.04em; }
       .reason { margin: 12px 0 0; }
       .reason strong, .warning strong { display: block; margin-bottom: 3px; color: var(--muted); font-size: .72rem; letter-spacing: .04em; }
@@ -256,6 +268,7 @@
         .objective-options { gap: 7px; }
         .objective-options label { padding: 7px; font-size: .78rem; }
         .timer-adjust, .timer-grid { grid-template-columns: 1fr; }
+        .map-strategy-controls { grid-template-columns: 1fr; }
       }
       @media (max-width: 380px) {
         #battle-rosters { gap: 6px; }
@@ -420,6 +433,12 @@
                   <button id="previous-end-set" type="button">종료 시각 적용</button>
                 </div>
               </section>
+              <section id="map-strategy-panel" class="map-strategy-panel" aria-labelledby="map-strategy-heading" hidden>
+                <h3 id="map-strategy-heading">맵 고유 목표 상태</h3>
+                <ul id="map-strategy-facts" class="map-strategy-facts"></ul>
+                <div id="map-strategy-controls" class="map-strategy-controls"></div>
+                <p class="hint">상태를 모르면 미확인으로 두세요. 변경 즉시 추천에 반영됩니다.</p>
+              </section>
               <div class="level-controls">
                 <div style="grid-column:1 / -1">
                   <label class="field-label" for="objective">오브젝트 상황</label>
@@ -498,6 +517,10 @@
                 <strong>대안</strong>
                 <p id="alternative"></p>
               </div>
+              <div class="reason">
+                <strong>예상 이득 · 위험</strong>
+                <p id="expected-outcome"></p>
+              </div>
               <div class="warning">
                 <strong>주의 사항</strong>
                 <p id="warning-text"></p>
@@ -529,6 +552,7 @@
       </dialog>
     </div>
 
+    <script src="map-strategies.js"></script>
     <script>
       (() => {
         "use strict";
@@ -763,7 +787,8 @@
           gameClockSeconds: 0, gameClockStartedAt: null,
           objectiveEventStatus: "waiting", objectiveEventStartedAt: null,
           lastObjectiveEndedAt: null, objectiveSecuredBy: "unknown",
-          objectiveEndKind: "normal", nextObjectiveAtOverride: null, objectiveHistory: []
+          objectiveEndKind: "normal", nextObjectiveAtOverride: null, objectiveHistory: [],
+          mapStrategy: HotsMapStrategies.createDefaultState()
         });
         const saveState = document.querySelector("#save-state");
         const heroDialog = document.querySelector("#hero-dialog");
@@ -842,6 +867,7 @@
               }];
             });
           }
+          fresh.mapStrategy = HotsMapStrategies.normalizeState(value.mapStrategy);
           if (!hasObjectiveTimerState && Number.isInteger(fresh.objectiveSeconds)) {
             fresh.nextObjectiveAtOverride = fresh.gameClockSeconds + fresh.objectiveSeconds;
           }
@@ -1192,6 +1218,73 @@
           }
         }
 
+        function renderMapStrategy() {
+          const section = document.querySelector("#map-strategy-panel");
+          const controls = document.querySelector("#map-strategy-controls");
+          const mapData = HotsMapStrategies.maps[state.map];
+          section.hidden = state.phase !== "game" || !mapData;
+          controls.replaceChildren();
+          if (!mapData) return;
+          document.querySelector("#map-strategy-heading").textContent = `${state.map} · 목표 상태`;
+          document.querySelector("#map-strategy-facts").innerHTML =
+            mapData.facts.map((fact) => `<li>${fact}</li>`).join("");
+          const data = state.mapStrategy[state.map];
+          if (state.map === "저주받은 골짜기") {
+            const countControl = (label, key) => `
+              <div class="map-strategy-control">
+                <span class="field-label">${label}</span>
+                <div class="map-strategy-count">
+                  <button type="button" data-map-unknown="${key}" aria-label="${label} 미확인 처리">?</button>
+                  <button type="button" data-map-step="${key}" data-step="-1" aria-label="${label} 감소">−</button>
+                  <output>${Number.isInteger(data[key]) ? `${data[key]}/2` : "미확인"}</output>
+                  <button type="button" data-map-step="${key}" data-step="1" aria-label="${label} 증가">+</button>
+                </div>
+              </div>`;
+            controls.innerHTML = `
+              ${countControl("우리 팀 공물 누적", "oursTributes")}
+              ${countControl("상대 팀 공물 누적", "enemyTributes")}
+              <label class="map-strategy-control field-label">현재 저주 상태
+                <select data-map-field="curseStatus">
+                  <option value="unknown">미확인</option><option value="none">저주 없음</option>
+                  <option value="ours">우리 팀 저주</option><option value="enemy">상대 팀 저주</option>
+                </select>
+              </label>`;
+            controls.querySelector('[data-map-field="curseStatus"]').value = data.curseStatus;
+          } else if (state.map === "파멸의 탑") {
+            const countControl = (label, key) => `
+              <div class="map-strategy-control">
+                <span class="field-label">${label}</span>
+                <div class="map-strategy-count">
+                  <button type="button" data-map-unknown="${key}" aria-label="${label} 미확인 처리">?</button>
+                  <button type="button" data-map-step="${key}" data-step="-1" aria-label="${label} 감소">−</button>
+                  <output>${Number.isInteger(data[key]) ? `${data[key]}/6` : "미확인"}</output>
+                  <button type="button" data-map-step="${key}" data-step="1" aria-label="${label} 증가">+</button>
+                </div>
+              </div>`;
+            controls.innerHTML = countControl("우리 팀 종탑 보유", "oursBellTowers")
+              + countControl("상대 팀 종탑 보유", "enemyBellTowers");
+          } else {
+            const shrineControl = (label, key) => `
+              <label class="map-strategy-control field-label">${label} 신단
+                <select data-map-field="${key}">
+                  <option value="unknown">미확인</option><option value="ours">우리 팀</option>
+                  <option value="enemy">상대 팀</option><option value="contested">경합 중</option>
+                </select>
+              </label>`;
+            controls.innerHTML = shrineControl("상단", "topShrine") + shrineControl("하단", "bottomShrine");
+            for (const key of ["topShrine", "bottomShrine"]) {
+              controls.querySelector(`[data-map-field="${key}"]`).value = data[key];
+            }
+          }
+          const source = document.createElement("a");
+          source.href = mapData.source;
+          source.target = "_blank";
+          source.rel = "noreferrer";
+          source.textContent = "규칙 출처";
+          source.className = "hint";
+          controls.append(source);
+        }
+
         function renderHeroResults() {
           if (!activeSlot) return;
           const used = allUsed(activeSlot.key, activeSlot.index);
@@ -1446,6 +1539,7 @@
           if (rallyTimingKnown && (oursRally.unknownDead || enemyRally.unknownDead)) missingInfo.push("사망 영웅 부활 시간");
           if (oursUltimates.unknown || enemyUltimates.unknown) missingInfo.push("궁극기 상태");
           if (oursUltimates.unrated || enemyUltimates.unrated) missingInfo.push("일부 영웅의 궁극기 영향도 데이터");
+          missingInfo.push(...HotsMapStrategies.getMissingInfo(state.map, state.mapStrategy));
           const incomplete = missingInfo.length > 0;
           const uncertaintyWarning = incomplete
             ? `추가 확인: ${missingInfo.slice(0, 3).join(" · ")}${missingInfo.length > 3 ? " 등" : ""}.`
@@ -1496,6 +1590,8 @@
             diagnosis: missingInfo.length ? `확인 필요 · ${missingInfo.slice(0, 3).join(" · ")}` : "전황 입력 반영",
             evidence: "제한적",
             analysis: lines,
+            expectedBenefit: "안전한 경험치·생존을 유지하고 다음 판단 기회를 확보합니다.",
+            risk: "입력되지 않은 적 위치와 이동 시간에 따라 실제 결과가 달라질 수 있습니다.",
             oursRally,
             enemyRally
           };
@@ -1542,7 +1638,7 @@
                   : state.laneTrade === "wave" ? "교전을 이어가기 어렵다면 안전한 웨이브를 정리하고 재합류하세요."
                     : "위험이 커지면 팀과 함께 후퇴해 다음 오브젝트를 준비하세요."
             );
-            const caution = guidance.caution || warning || (
+            const caution = guidance.warning || guidance.caution || warning || (
               "추천은 입력된 전황 기준입니다. 적 위치, 캠프 이동 시간, 실제 합류 경로는 확인하지 못합니다."
             );
             return {
@@ -1552,12 +1648,17 @@
               warning: [caution, uncertaintyWarning].filter(Boolean).join(" "),
               executionCondition,
               alternative,
+              expectedBenefit: guidance.expectedBenefit || base.expectedBenefit,
+              risk: guidance.risk || base.risk,
               urgency,
-              category,
+              category: guidance.category || category,
               diagnosis: oursRally
                 ? `${survivalText} · 오브젝트 시 ${oursRally.confirmed}-${oursRally.maximum}명 예상 합류`
-                : `${survivalText} · ${levelText}`,
-              evidence: incomplete ? "제한적" : "입력 반영"
+                : `${survivalText} · ${levelText}${guidance.category === "맵 전략" ? " · 맵 상태 반영" : ""}`,
+              evidence: incomplete ? "제한적" : "입력 반영",
+              analysis: guidance.category === "맵 전략"
+                ? [...base.analysis, `맵별 판단: ${reason}`]
+                : base.analysis
             };
           };
           const safeTrade = (context) => {
@@ -1577,6 +1678,25 @@
           // Priority: survival, active event, post-event conversion, objective timing, then fight and talent context.
           if (oursPossibleAlive <= 2 && oursPossibleAlive < enemyAlive) {
             return set("후퇴해 시간을 버세요", "우리 팀 생존 인원이 적어 정면 교전에서 수적 열세입니다.", "아군이 다시 합류할 때까지 오브젝트 경합과 깊은 진입을 피하세요.");
+          }
+          const mapRecommendation = HotsMapStrategies.evaluate(state.map, state.mapStrategy, {
+            oursAlive,
+            enemyAlive,
+            enemyPossibleAlive,
+            confirmedRallyAdvantage,
+            levelDisadvantage,
+            objectiveActive,
+            objectivePhase: timer.phase,
+            objectiveSeconds: Number.isInteger(objectiveSeconds) ? objectiveSeconds : null,
+            severeSurvivalRisk: oursPossibleAlive <= 2 && oursPossibleAlive < enemyAlive
+          });
+          if (mapRecommendation) {
+            return set(
+              mapRecommendation.action,
+              mapRecommendation.reason,
+              mapRecommendation.warning,
+              mapRecommendation
+            );
           }
           if (timer.phase === "active") {
             if (state.objective === "enemy") {
@@ -1812,6 +1932,8 @@
           document.querySelector("#reason").textContent = recommendation.reason;
           document.querySelector("#execution-condition").textContent = recommendation.executionCondition;
           document.querySelector("#alternative").textContent = recommendation.alternative;
+          document.querySelector("#expected-outcome").textContent =
+            `${recommendation.expectedBenefit} 위험: ${recommendation.risk}`;
           document.querySelector("#warning-text").textContent = recommendation.warning;
           document.querySelector("#analysis").innerHTML = recommendation.analysis.map((line) => `<li>${line}</li>`).join("");
         }
@@ -1833,6 +1955,7 @@
           if (order) order.checked = true;
           document.querySelector("#objective").value = state.objective;
           renderObjectiveTimer();
+          renderMapStrategy();
           document.querySelector("#camp-status").value = state.campStatus;
           document.querySelector("#lane-trade").value = state.laneTrade;
           document.querySelector("#fight-result").value = state.fightResult;
@@ -1852,6 +1975,7 @@
         render();
         document.querySelector("#map").addEventListener("change", (event) => {
           state.map = event.target.value;
+          state.mapStrategy = HotsMapStrategies.createDefaultState();
           state.gameClockSeconds = 0;
           state.gameClockStartedAt = null;
           state.objective = "unknown";
@@ -1879,6 +2003,38 @@
             `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : "후픽"}`;
           persist();
         }));
+        const mapStrategyControls = document.querySelector("#map-strategy-controls");
+        mapStrategyControls.addEventListener("change", (event) => {
+          const field = event.target.dataset.mapField;
+          if (!field || !state.mapStrategy[state.map]) return;
+          state.mapStrategy[state.map][field] = event.target.value;
+          updateRecommendation();
+          persist();
+        });
+        mapStrategyControls.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-map-step]");
+          if (!state.mapStrategy[state.map]) return;
+          const unknownButton = event.target.closest("[data-map-unknown]");
+          if (unknownButton) {
+            state.mapStrategy[state.map][unknownButton.dataset.mapUnknown] = null;
+            renderMapStrategy();
+            updateRecommendation();
+            persist();
+            return;
+          }
+          if (!button) return;
+          const key = button.dataset.mapStep;
+          const value = state.mapStrategy[state.map][key];
+          const maximum = state.map === "저주받은 골짜기" ? 2 : 6;
+          if (Number.isInteger(value)) {
+            state.mapStrategy[state.map][key] = Math.min(maximum, Math.max(0, value + Number(button.dataset.step)));
+          } else if (Number(button.dataset.step) > 0) {
+            state.mapStrategy[state.map][key] = 1;
+          }
+          renderMapStrategy();
+          updateRecommendation();
+          persist();
+        });
         document.querySelector("#hero-results").addEventListener("click", (event) => {
           const option = event.target.closest("[data-hero]");
           if (!option || !activeSlot) return;
@@ -1893,6 +2049,7 @@
         heroDialog.addEventListener("close", () => { activeSlot = null; });
         document.querySelector("#start-match").addEventListener("click", () => {
           state.phase = "game";
+          state.mapStrategy = HotsMapStrategies.createDefaultState();
           state.gameClockSeconds = 0;
           state.gameClockStartedAt = Date.now();
           state.objective = mapObjectiveRules[state.map]?.first?.startsAt ? "soon" : "unknown";
