@@ -202,6 +202,8 @@
       .analysis li + li { margin-top: 6px; }
       .reset-button { width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--muted); font-weight: 700; }
       .reset-button:hover { border-color: var(--red); color: var(--red); }
+      .page-actions { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; padding: 8px 0; margin-bottom: 8px; pointer-events: none; }
+      .page-actions .reset-button { width: auto; min-width: 120px; padding: 0 12px; background: #191f2c; box-shadow: 0 4px 14px #0006; pointer-events: auto; }
       .footnote { margin: 0; color: var(--muted); font-size: .76rem; }
       .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
       [hidden] { display: none !important; }
@@ -258,6 +260,10 @@
         </div>
         <div id="save-state" class="save-state" role="status" aria-live="polite">자동 저장 준비</div>
       </header>
+
+      <div class="page-actions">
+        <button id="reset" class="reset-button" type="button">입력 초기화</button>
+      </div>
 
       <main>
         <section id="prep-screen" class="card" aria-labelledby="draft-heading">
@@ -387,7 +393,6 @@
             <section class="card">
               <h2>사용 안내</h2>
               <p class="footnote" style="margin-top:9px">추천은 생존 인원, 레벨, 오브젝트 입력만 보는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
-              <button id="reset" class="reset-button" type="button" style="margin-top:15px">입력 초기화</button>
             </section>
           </aside>
         </section>
