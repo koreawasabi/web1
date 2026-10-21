@@ -130,6 +130,12 @@
       .quick-clock-item:last-child { text-align: right; }
       .quick-clock-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: .82rem; }
       .quick-clock-value { font-size: 1.65rem; font-variant-numeric: tabular-nums; font-weight: 850; }
+      .match-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+      .match-controls > div { display: flex; gap: 8px; }
+      .match-status { color: var(--muted); font-size: .85rem; font-weight: 700; }
+      .match-controls button { min-height: 40px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--text); font-weight: 750; }
+      .match-controls #game-start { border-color: transparent; background: var(--blue); color: #07111c; }
+      .match-controls button:disabled { cursor: not-allowed; opacity: .5; }
       .quick-section-title { margin: 16px 0 10px; font-size: 1rem; }
       .quick-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
       .quick-choice {
@@ -419,6 +425,13 @@
               <div class="quick-clock-item">
                 <span class="quick-clock-label">다음 오브젝트</span>
                 <span id="quick-objective-countdown" class="quick-clock-value">미확인</span>
+              </div>
+            </div>
+            <div class="match-controls">
+              <span id="match-status" class="match-status" role="status" aria-live="polite">게임 시작 전</span>
+              <div>
+                <button id="game-start" type="button">게임 시작</button>
+                <button id="game-end" type="button" disabled>게임 종료</button>
               </div>
             </div>
             <h3 class="quick-section-title">지금 상황을 선택해</h3>
@@ -866,7 +879,7 @@
           ])),
           oursLevel: null, enemyLevel: null, objective: "unknown", objectiveSeconds: null,
           campStatus: "unknown", laneTrade: "unknown", fightResult: "unknown",
-          gameClockSeconds: 0, gameClockStartedAt: null,
+          gameClockSeconds: 0, gameClockStartedAt: null, gameStatus: "waiting",
           objectiveEventStatus: "waiting", objectiveEventStartedAt: null,
           lastObjectiveEndedAt: null, objectiveSecuredBy: "unknown",
           objectiveEndKind: "normal", nextObjectiveAtOverride: null, objectiveHistory: [],
@@ -928,6 +941,10 @@
           if (Number.isSafeInteger(value.gameClockStartedAt) && value.gameClockStartedAt > 0 && value.gameClockStartedAt <= Date.now()) {
             fresh.gameClockStartedAt = value.gameClockStartedAt;
           }
+          fresh.gameStatus = ["waiting", "active", "ended"].includes(value.gameStatus)
+            ? value.gameStatus
+            : fresh.gameClockStartedAt ? "active" : "waiting";
+          if (fresh.gameStatus !== "active") fresh.gameClockStartedAt = null;
           if (["waiting", "active", "ended"].includes(value.objectiveEventStatus)) fresh.objectiveEventStatus = value.objectiveEventStatus;
           for (const key of ["objectiveEventStartedAt", "lastObjectiveEndedAt", "nextObjectiveAtOverride"]) {
             if (Number.isInteger(value[key]) && value[key] >= 0 && value[key] <= 86400) fresh[key] = value[key];
@@ -985,7 +1002,7 @@
         }
 
         function gameTimeSeconds() {
-          const elapsed = state.gameClockStartedAt
+          const elapsed = state.gameStatus === "active" && state.gameClockStartedAt
             ? Math.floor((Date.now() - state.gameClockStartedAt) / 1000)
             : 0;
           return Math.max(0, Math.min(86400, state.gameClockSeconds + elapsed));
@@ -1085,7 +1102,17 @@
             && timer.maxRemaining !== timer.minRemaining;
           const rule = mapObjectiveRules[state.map];
           document.querySelector("#game-clock").textContent = formatGameTime(now);
-          document.querySelector("#clock-pause").textContent = state.gameClockStartedAt ? "시계 일시정지" : "시계 시작 / 재개";
+          document.querySelector("#match-status").textContent = ({
+            waiting: "게임 시작 전",
+            active: state.gameClockStartedAt ? "게임 진행 중" : "게임 일시정지",
+            ended: "게임 종료"
+          })[state.gameStatus];
+          document.querySelector("#game-start").disabled = state.gameStatus !== "waiting";
+          document.querySelector("#game-end").disabled = state.gameStatus !== "active";
+          document.querySelector("#clock-pause").textContent = state.gameStatus === "ended"
+            ? "게임 종료"
+            : state.gameClockStartedAt ? "시계 일시정지" : "시계 시작 / 재개";
+          document.querySelector("#clock-pause").disabled = state.gameStatus !== "active";
           const firstTimeNote = rule?.first
             ? ` 첫 목표: ${[
               Number.isInteger(rule.first.revealAt) ? `위치 표시 ${formatGameTime(rule.first.revealAt)}` : "",
@@ -2086,6 +2113,7 @@
           state.mapStrategy = HotsMapStrategies.createDefaultState();
           state.gameClockSeconds = 0;
           state.gameClockStartedAt = null;
+          state.gameStatus = "waiting";
           state.objective = "unknown";
           state.objectiveSeconds = null;
           state.objectiveEventStatus = "waiting";
@@ -2174,7 +2202,8 @@
           state.phase = "game";
           state.mapStrategy = HotsMapStrategies.createDefaultState();
           state.gameClockSeconds = 0;
-          state.gameClockStartedAt = Date.now();
+          state.gameClockStartedAt = null;
+          state.gameStatus = "waiting";
           state.objective = mapObjectiveRules[state.map]?.first?.startsAt ? "soon" : "unknown";
           state.objectiveSeconds = null;
           state.objectiveEventStatus = "waiting";
@@ -2279,7 +2308,21 @@
           updateRecommendation();
           persist();
         };
+        document.querySelector("#game-start").addEventListener("click", () => {
+          if (state.gameStatus !== "waiting") return;
+          state.gameStatus = "active";
+          state.gameClockStartedAt = Date.now();
+          refreshTimer();
+        });
+        document.querySelector("#game-end").addEventListener("click", () => {
+          if (state.gameStatus !== "active") return;
+          state.gameClockSeconds = gameTimeSeconds();
+          state.gameClockStartedAt = null;
+          state.gameStatus = "ended";
+          refreshTimer();
+        });
         document.querySelector("#clock-pause").addEventListener("click", () => {
+          if (state.gameStatus !== "active") return;
           if (state.gameClockStartedAt) {
             state.gameClockSeconds = gameTimeSeconds();
             state.gameClockStartedAt = null;

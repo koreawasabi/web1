@@ -301,6 +301,9 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   const quickDashboard = html.match(/<section class="quick-dashboard card"([\s\S]*?)<\/section>/)?.[1];
   assert.match(quickDashboard, /id="game-clock"/);
   assert.match(quickDashboard, /id="quick-objective-countdown"/);
+  assert.match(quickDashboard, /id="game-start"[^>]*>게임 시작/);
+  assert.match(quickDashboard, /id="game-end"[^>]*disabled>게임 종료/);
+  assert.match(quickDashboard, /id="match-status"/);
   for (const action of ["fight-won", "fight-lost", "objective-contested", "ally-dead"]) {
     assert.match(quickDashboard, new RegExp(`data-quick-action="${action}"`));
   }
