@@ -741,6 +741,14 @@
           return picks[index] || "";
         }
 
+        function teamSurvival(team) {
+          const members = state.battle[team];
+          const identified = members.map((member, index) => Boolean(pickedHero(team, index) || member.hero));
+          const confirmedAlive = members.filter((member, index) => identified[index] && member.alive).length;
+          const unknownHeroes = identified.filter((isIdentified) => !isIdentified).length;
+          return { confirmedAlive, possibleAlive: confirmedAlive + unknownHeroes, unknownHeroes };
+        }
+
         const talentLevels = [1, 4, 7, 10, 13, 16, 20];
         const ultimateImpact = {
           "가로쉬": 2, "아눕아락": 2, "메이": 2, "정예 타우렌 족장": 2, "메디브": 2,
@@ -851,16 +859,22 @@
             control.addEventListener(control.tagName === "BUTTON" ? "click" : "change", update);
           });
           for (const team of ["ours", "enemy"]) {
-            const alive = state.battle[team].filter((member) => member.alive).length;
-            document.querySelector(`#${team}-count`).textContent = `${alive}/5 생존`;
+            const survival = teamSurvival(team);
+            document.querySelector(`#${team}-count`).textContent = survival.unknownHeroes
+              ? `${survival.confirmedAlive} 확정 생존 · ${survival.unknownHeroes}명 미확인`
+              : `${survival.confirmedAlive}/5 생존`;
           }
         }
 
         function makeRecommendation() {
           const ours = state.battle.ours;
           const enemy = state.battle.enemy;
-          const oursAlive = ours.filter((member) => member.alive).length;
-          const enemyAlive = enemy.filter((member) => member.alive).length;
+          const oursSurvival = teamSurvival("ours");
+          const enemySurvival = teamSurvival("enemy");
+          const oursAlive = oursSurvival.confirmedAlive;
+          const enemyAlive = enemySurvival.confirmedAlive;
+          const oursPossibleAlive = oursSurvival.possibleAlive;
+          const enemyPossibleAlive = enemySurvival.possibleAlive;
           const levelsKnown = Number.isInteger(state.oursLevel) && Number.isInteger(state.enemyLevel);
           const levelDifference = levelsKnown ? state.oursLevel - state.enemyLevel : null;
           const oursLevelInfo = levelDetails(state.oursLevel);
@@ -882,10 +896,19 @@
           const availability = (team) => {
             if (!rallyTimingKnown) return null;
             const members = state.battle[team];
-            const revived = members.filter((member) => !member.alive && Number.isInteger(member.respawn) && member.respawn <= state.objectiveSeconds).length;
-            const unknownDead = members.filter((member) => !member.alive && !Number.isInteger(member.respawn)).length;
-            const confirmed = members.filter((member) => member.alive).length + revived;
-            return { confirmed, maximum: confirmed + unknownDead, unknownDead };
+            const survival = teamSurvival(team);
+            const knownDead = members.filter((member, index) =>
+              (pickedHero(team, index) || member.hero) && !member.alive
+            );
+            const revived = knownDead.filter((member) => Number.isInteger(member.respawn) && member.respawn <= state.objectiveSeconds).length;
+            const unknownDead = knownDead.filter((member) => !Number.isInteger(member.respawn)).length;
+            const confirmed = survival.confirmedAlive + revived;
+            return {
+              confirmed,
+              maximum: confirmed + unknownDead + survival.unknownHeroes,
+              unknownDead,
+              unknownHeroes: survival.unknownHeroes
+            };
           };
           const oursRally = availability("ours");
           const enemyRally = availability("enemy");
@@ -893,6 +916,7 @@
           const largeRallyDisadvantage = oursRally && enemyRally && oursRally.maximum <= enemyRally.confirmed - 2;
           const ultimateSummary = (team) => state.battle[team].reduce((summary, member, index) => {
             const hero = pickedHero(team, index) || member.hero;
+            if (!hero) return summary;
             const impact = ultimateImpact[hero];
             const canAttend = member.alive || (rallyTimingKnown && Number.isInteger(member.respawn) && member.respawn <= state.objectiveSeconds);
             if (!impact) summary.unrated += 1;
@@ -917,12 +941,12 @@
             ? `추가 확인: ${missingInfo.slice(0, 3).join(" · ")}${missingInfo.length > 3 ? " 등" : ""}.`
             : "";
           const lines = [
-            `생존 인원: 우리 팀 ${oursAlive}/5 · 상대 팀 ${enemyAlive}/5`,
+            `확정 생존: 우리 팀 ${oursAlive}/5${oursSurvival.unknownHeroes ? ` (+${oursSurvival.unknownHeroes}명 미확인)` : ""} · 상대 ${enemyAlive}/5${enemySurvival.unknownHeroes ? ` (+${enemySurvival.unknownHeroes}명 미확인)` : ""}`,
             `오브젝트: ${objectiveLabels[state.objective]}${rallyTimingKnown ? ` · ${state.objectiveSeconds}초 후` : ""}`
           ];
           if (oursRally && enemyRally) {
-            const formatAvailability = (summary) => summary.unknownDead
-              ? `${summary.confirmed}-${summary.maximum}/5 부활 기준 예상 · 부활 시간 미입력 ${summary.unknownDead}명`
+            const formatAvailability = (summary) => summary.unknownDead || summary.unknownHeroes
+              ? `${summary.confirmed}-${summary.maximum}/5 부활 기준 예상 · 정보 미확인 ${summary.unknownDead + summary.unknownHeroes}명`
               : `${summary.confirmed}/5 오브젝트 시 합류 예상`;
             lines.push(`예상 합류: 우리 팀 ${formatAvailability(oursRally)} · 상대 ${formatAvailability(enemyRally)}`);
           } else if (objectiveActive) {
@@ -958,14 +982,20 @@
           };
           const set = (action, reason, warning = "") => {
             let urgency = "기본";
-            if (oursAlive <= 2 && oursAlive < enemyAlive) urgency = "긴급";
+            if (oursPossibleAlive <= 2 && oursPossibleAlive < enemyAlive) urgency = "긴급";
             else if (largeRallyDisadvantage || levelDisadvantage || (state.objective === "enemy" && !confirmedRallyAdvantage)) urgency = "주의";
             else if (state.objective === "contested" || state.objective === "soon") urgency = "준비";
-            else if (confirmedRallyAdvantage || oursAlive >= enemyAlive + 2 || levelAdvantage) urgency = "기회";
+            else if (confirmedRallyAdvantage || oursAlive >= enemyPossibleAlive + 2 || levelAdvantage) urgency = "기회";
             const levelText = levelsKnown
               ? `${Math.max(state.oursLevel, state.enemyLevel) < 10 ? "초반" : Math.max(state.oursLevel, state.enemyLevel) < 20 ? "중반" : "후반"} · 레벨 ${state.oursLevel}-${state.enemyLevel} · ${talentDifference > 0 ? "특성 구간 우위" : talentDifference < 0 ? "특성 구간 열세" : "특성 구간 동수"}`
               : "양 팀 레벨 미입력";
-            const survivalText = oursAlive < enemyAlive ? "생존 인원 열세" : oursAlive > enemyAlive ? "생존 인원 우위" : "생존 인원 동수";
+            const survivalText = oursAlive > enemyPossibleAlive
+              ? "생존 인원 확정 우위"
+              : enemyAlive > oursPossibleAlive
+                ? "생존 인원 확정 열세"
+                : oursSurvival.unknownHeroes || enemySurvival.unknownHeroes
+                  ? "생존 인원 일부 미확인"
+                  : "생존 인원 동수";
             const category = ["soon", "ours", "contested", "enemy", "secured"].includes(state.objective)
               ? "오브젝트 운영"
               : levelDisadvantage || levelAdvantage
@@ -986,7 +1016,7 @@
           };
 
           // Priority: immediate survival, confirmed rally timing, talent disadvantage, objective state, then ultimate tie-breakers.
-          if (oursAlive <= 2 && oursAlive < enemyAlive) {
+          if (oursPossibleAlive <= 2 && oursPossibleAlive < enemyAlive) {
             return set("후퇴해 시간을 버세요", "우리 팀 생존 인원이 적어 정면 교전에서 수적 열세입니다.", "아군이 다시 합류할 때까지 오브젝트 경합과 깊은 진입을 피하세요.");
           }
           if (objectiveActive && largeRallyDisadvantage && ["contested", "enemy", "soon"].includes(state.objective)) {
@@ -1005,8 +1035,7 @@
             return set("오브젝트에서 물러나 라인을 정리하세요", "상대가 오브젝트를 진행 중입니다. 수적·레벨 우위가 확인되지 않아 맞교전은 위험합니다.", "상대 사망이나 확실한 인원 우위를 확인하기 전에는 진입하지 마세요.");
           }
           if (state.objective === "contested") {
-            const confirmedEvenOrBetter = oursRally && enemyRally && oursRally.confirmed >= enemyRally.confirmed
-              && oursRally.unknownDead === 0 && enemyRally.unknownDead === 0;
+            const confirmedEvenOrBetter = oursRally && enemyRally && oursRally.confirmed >= enemyRally.maximum;
             if ((confirmedRallyAdvantage || confirmedEvenOrBetter) && !levelDisadvantage) {
               const ultimateReason = ultimateAdvantage ? " 입력된 궁극기 중 교전 영향도가 높은 영웅의 사용 가능 상태도 우위입니다." : "";
               return set("팀을 모아 오브젝트에 합류하세요", isLateGame
@@ -1034,16 +1063,16 @@
           if (state.objective === "secured") {
             return set("오브젝트 이득을 활용해 라인을 정리하세요", "이번 오브젝트는 확보했습니다. 다음 목표를 준비하며 불필요한 추격을 삼가세요.");
           }
-          if (enemyAlive <= 2 && oursAlive >= enemyAlive + 2) {
+          if (enemyPossibleAlive <= 2 && oursAlive >= enemyPossibleAlive + 2) {
             return set("가까운 안전한 목표를 함께 확보하세요", "상대 팀의 생존 인원이 적습니다. 무리한 추격보다 가까운 목표가 안전합니다.");
           }
-          if (ultimateAdvantage && !levelDisadvantage && oursAlive >= enemyAlive) {
+          if (ultimateAdvantage && !levelDisadvantage && oursAlive >= enemyPossibleAlive) {
             return set("궁극기 준비된 팀원을 모아 유리한 교전을 찾으세요", `입력된 상태와 일부 영웅별 영향도 추정에서 우리 팀의 교전 궁극기 점수가 ${oursUltimates.readyImpact} 대 ${enemyUltimates.readyImpact}로 높습니다.`, "궁극기 선택과 실제 재사용 대기시간은 입력되지 않아 영웅별 점수는 참고치입니다.");
           }
-          if (ultimateDisadvantage && !levelAdvantage && oursAlive <= enemyAlive) {
+          if (ultimateDisadvantage && !levelAdvantage && oursPossibleAlive <= enemyAlive) {
             return set("상대 궁극기 사용을 확인하고 교전을 늦추세요", `입력된 상태와 일부 영웅별 영향도 추정에서 상대 팀의 교전 궁극기 점수가 ${enemyUltimates.readyImpact} 대 ${oursUltimates.readyImpact}로 높습니다.`, "궁극기 선택과 실제 재사용 대기시간은 입력되지 않아 영웅별 점수는 참고치입니다.");
           }
-          if (oursAlive >= enemyAlive + 2) {
+          if (oursAlive >= enemyPossibleAlive + 2) {
             return set("가까운 목표를 함께 압박하세요", "생존 인원 우위가 있습니다. 흩어지지 말고 가까운 라인이나 구조물을 압박하세요.");
           }
           if (isEarlyGame && state.objective === "unknown") {
@@ -1052,10 +1081,12 @@
           if (isLateGame && state.objective === "unknown") {
             return set("다음 오브젝트를 대비해 팀을 모으세요", "20레벨 특성 이후의 후반 구간입니다. 한 명의 이탈이나 사망이 다음 목표에 큰 영향을 줄 수 있어 라인 정리 후 안전하게 합류하세요.");
           }
-          if (levelAdvantage && oursAlive >= enemyAlive) {
+          if (levelAdvantage && oursAlive >= enemyPossibleAlive) {
             return set("팀을 모아 유리한 교전을 찾으세요", "레벨 우위와 생존 인원을 바탕으로 유리한 위치의 교전을 선택하세요.");
           }
-          if (levelsKnown && levelDifference === 0 && talentDifference === 0 && oursAlive >= 4 && enemyAlive >= 4) {
+          if (levelsKnown && levelDifference === 0 && talentDifference === 0
+            && oursSurvival.unknownHeroes === 0 && enemySurvival.unknownHeroes === 0
+            && oursAlive >= 4 && enemyAlive >= 4) {
             return set("다섯 명을 모아 안전한 라인을 압박하세요", "양 팀 생존 인원이 비슷합니다. 단독 교전보다 팀 합류와 위치 확인이 우선입니다.");
           }
           if (incomplete || state.objective === "unknown") return base;
@@ -1064,16 +1095,22 @@
 
         function updateRecommendation() {
           const recommendation = makeRecommendation();
-          const oursAlive = state.battle.ours.filter((member) => member.alive).length;
-          const enemyAlive = state.battle.enemy.filter((member) => member.alive).length;
+          const oursSurvival = teamSurvival("ours");
+          const enemySurvival = teamSurvival("enemy");
+          const oursAlive = oursSurvival.confirmedAlive;
+          const enemyAlive = enemySurvival.confirmedAlive;
           const survivalSummary = document.querySelector("#survival-summary");
           survivalSummary.replaceChildren();
-          for (const [team, label, alive, otherAlive] of [
-            ["ours", "우리 팀", oursAlive, enemyAlive],
-            ["enemy", "상대 팀", enemyAlive, oursAlive]
-          ]) {
+          for (const [team, label] of [["ours", "우리 팀"], ["enemy", "상대 팀"]]) {
+            const own = team === "ours" ? oursSurvival : enemySurvival;
+            const other = team === "ours" ? enemySurvival : oursSurvival;
+            const alive = own.confirmedAlive;
+            const advantage = own.confirmedAlive > other.possibleAlive
+              ? "leading"
+              : own.possibleAlive < other.confirmedAlive
+                ? "trailing"
+                : own.unknownHeroes || other.unknownHeroes ? "uncertain" : "even";
             const row = document.createElement("div");
-            const advantage = alive < otherAlive ? "trailing" : alive > otherAlive ? "leading" : "even";
             row.className = `survival-team ${team}-${advantage}`;
             const teamLabel = document.createElement("span");
             teamLabel.textContent = label;
@@ -1082,7 +1119,10 @@
             const rallyText = rally
               ? ` · 오브젝트 시 ${rally.confirmed}${rally.maximum !== rally.confirmed ? `-${rally.maximum}` : ""}명 예상`
               : "";
-            count.textContent = `${alive}/5 생존${advantage === "trailing" ? " · 열세" : advantage === "leading" ? " · 우세" : " · 동수"}${rallyText}`;
+            const aliveText = own.unknownHeroes
+              ? `${alive}명 확정 생존 · ${own.unknownHeroes}명 미확인`
+              : `${alive}/5 생존${advantage === "trailing" ? " · 열세" : advantage === "leading" ? " · 우세" : ""}`;
+            count.textContent = `${aliveText}${rallyText}`;
             row.append(teamLabel, count);
             survivalSummary.append(row);
           }
