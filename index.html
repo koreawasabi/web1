@@ -25,7 +25,14 @@
       body {
         margin: 0;
         min-width: 320px;
-        background: radial-gradient(ellipse at 50% -15%, #263750 0, var(--bg) 55%);
+        background-color: var(--bg);
+        background-image:
+          linear-gradient(180deg, rgba(16,21,31,.52), rgba(16,21,31,.76)),
+          var(--map-background-image, radial-gradient(ellipse at 50% -15%, #263750 0, var(--bg) 55%));
+        background-size: cover, cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
         color: var(--text);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         line-height: 1.5;
@@ -44,7 +51,7 @@
       .save-state { color: var(--muted); font-size: .8rem; text-align: right; }
       .save-state.error { color: var(--red); }
       .main-column, .side-column { display: grid; gap: 18px; min-width: 0; }
-      .card { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(25,31,44,.95); box-shadow: 0 12px 32px #0002; }
+      .card { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(25,31,44,.86); box-shadow: 0 12px 32px #0002; }
       .card-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
       h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
       h3 { margin: 0; font-size: .98rem; }
@@ -331,6 +338,22 @@
           enemyBans: { count: 3, label: "상대 밴" },
           enemyPicks: { count: 5, label: "상대 픽" }
         };
+        const mapBackgrounds = {
+          "거미 여왕의 무덤": "https://static.wikia.nocookie.net/allstars_gamepedia/images/d/d9/Tomb_of_the_Spider_Queen_loading_screen.jpg/revision/latest?cb=20150705092100",
+          "공포의 정원": "https://static.wikia.nocookie.net/allstars_gamepedia/images/e/e2/Garden_of_Terror_Gameplay_01.jpg/revision/latest?cb=20180923073719",
+          "파멸의 탑": "https://static.wikia.nocookie.net/allstars_gamepedia/images/c/cf/Grave_Keeper.jpg/revision/latest?cb=20151106222704",
+          "불지옥 신단": "https://static.wikia.nocookie.net/allstars_gamepedia/images/e/e5/Infernal_Shrines.jpg/revision/latest?cb=20150805145033",
+          "브락시스 항전": "https://static.wikia.nocookie.net/allstars_gamepedia/images/1/10/Braxis_Holdout_Map.jpg/revision/latest?cb=20160817130508",
+          "볼스카야 공장": "https://static.wikia.nocookie.net/allstars_gamepedia/images/4/4a/Volskaya_Foundry.jpg/revision/latest?cb=20170915184507",
+          "저주받은 골짜기": "https://static.wikia.nocookie.net/allstars_gamepedia/images/5/5c/Cursed_Hollow_loading_screen.jpg/revision/latest?cb=20150705090349",
+          "용의 둥지": "https://static.wikia.nocookie.net/allstars_gamepedia/images/c/cb/Dragon_Shire_loading_screen_old_02.jpg/revision/latest?cb=20150712152909",
+          "영원의 전쟁터": "https://static.wikia.nocookie.net/allstars_gamepedia/images/9/9e/Battlefield_of_Eternity_loading_screen.jpg/revision/latest?cb=20150713163229",
+          "하늘 사원": "https://static.wikia.nocookie.net/allstars_gamepedia/images/6/66/Sky_Temple_loading_screen.jpg/revision/latest?cb=20150705092250",
+          "핵탄두 격전지": "https://static.wikia.nocookie.net/allstars_gamepedia/images/b/b8/Warhead_Junction_Map.jpg/revision/latest?cb=20160817130522",
+          "알터랙 고개": "https://static.wikia.nocookie.net/allstars_gamepedia/images/6/60/Alterac_Pass_Loading_Screen.jpg/revision/latest?cb=20180605014902",
+          "하나무라 사원": "https://static.wikia.nocookie.net/allstars_gamepedia/images/1/14/Hanamura_Temple_Loading_Screen.png/revision/latest?cb=20180821064506",
+          "블랙하트 항만": "https://static.wikia.nocookie.net/allstars_gamepedia/images/a/ac/Blackheart%27s_Bay_loading_screen.jpg/revision/latest?cb=20140213200757"
+        };
         const defaultState = () => ({
           phase: "prep", map: "", draftOrder: "", draft: Object.fromEntries(
             Object.entries(slots).map(([key, value]) => [key, Array(value.count).fill("")])
@@ -612,7 +635,17 @@
           document.querySelector("#analysis").innerHTML = recommendation.analysis.map((line) => `<li>${line}</li>`).join("");
         }
 
+        function updateMapBackground() {
+          const image = mapBackgrounds[state.map];
+          if (image) {
+            document.body.style.setProperty("--map-background-image", `url("${image}")`);
+          } else {
+            document.body.style.removeProperty("--map-background-image");
+          }
+        }
+
         function render() {
+          updateMapBackground();
           document.querySelector("#map").value = state.map;
           const order = document.querySelector(`input[name="draft-order"][value="${state.draftOrder}"]`);
           if (order) order.checked = true;
@@ -631,6 +664,7 @@
         render();
         document.querySelector("#map").addEventListener("change", (event) => {
           state.map = event.target.value;
+          updateMapBackground();
           document.querySelector("#draft-status").textContent = draftProgress();
           document.querySelector("#match-summary").textContent =
             `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "밴픽 순서 미선택"}`;
