@@ -134,7 +134,7 @@
       .roster { display: grid; gap: 7px; }
       .hero-row {
         display: grid;
-        grid-template-columns: minmax(95px, 1fr) 112px 86px;
+        grid-template-columns: minmax(0, 1fr) minmax(86px, 112px) minmax(72px, 86px);
         align-items: center;
         gap: 8px;
         padding: 9px 10px;
@@ -152,9 +152,10 @@
       .life-button[aria-pressed="true"][data-value="alive"] { border-color: #386b55; background: #224c3a; color: #a5f0c7; }
       .life-button[aria-pressed="true"][data-value="dead"] { border-color: #754249; background: #542c33; color: #ffb0b5; }
       .life-button:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
-      .battle-team + .battle-team { margin-top: 16px; }
+      #battle-rosters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .battle-team { min-width: 0; }
       .team-title .team-count { margin-left: auto; color: var(--muted); font-size: .77rem; font-weight: 600; }
-      .level-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+      .level-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 14px; }
       .objective-options { display: flex; flex-wrap: wrap; gap: 10px 16px; }
       .objective-options label { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; }
       .recommendation { position: sticky; top: 16px; border-color: #455774; background: linear-gradient(145deg, #202d40, #191f2c 72%); }
@@ -190,15 +191,25 @@
         .draft-actions { display: grid; }
         .draft-actions button { width: 100%; }
         .hero-results { grid-template-columns: 1fr; }
-        .hero-row { grid-template-columns: minmax(0, 1fr) minmax(122px, .9fr); gap: 6px; padding: 7px 6px; }
+        #battle-rosters { gap: 8px; }
+        .battle-team .team-title { gap: 5px; font-size: .8rem; }
+        .hero-row { grid-template-columns: minmax(0, 1fr) minmax(96px, .95fr); gap: 5px; padding: 6px 5px; }
         .hero-identity { grid-column: 1; }
         .hero-row .life-toggle { grid-column: 2; }
-        .hero-row select { grid-column: 1 / -1; }
-        .hero-portrait { width: 36px; height: 36px; flex-basis: 36px; }
-        .hero-row select { padding: 4px; font-size: .7rem; }
-        .hero-name { font-size: .75rem; }
+        .hero-row select { grid-column: 1 / -1; min-width: 0; padding: 4px; font-size: .68rem; }
+        .hero-portrait { width: 30px; height: 34px; flex-basis: 30px; }
+        .hero-identity { gap: 5px; }
+        .hero-name { font-size: .68rem; }
+        .life-button { padding: 3px 4px; font-size: .68rem; }
         .objective-options { gap: 7px; }
         .objective-options label { padding: 7px; font-size: .78rem; }
+      }
+      @media (max-width: 380px) {
+        #battle-rosters { gap: 6px; }
+        .battle-team .team-title { font-size: .72rem; }
+        .hero-row { grid-template-columns: minmax(0, 1fr); }
+        .hero-identity, .hero-row .life-toggle, .hero-row select { grid-column: 1; }
+        .hero-row .life-toggle { width: 100%; }
       }
       @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
     </style>
@@ -271,8 +282,6 @@
                 </div>
                 <button id="back-to-prep" class="secondary-button" type="button">← 밴픽 수정</button>
               </div>
-              <p id="match-summary" class="hint"></p>
-              <div id="battle-rosters"></div>
               <div class="level-controls">
                 <div>
                   <label class="field-label" for="level">우리 팀 레벨 상황</label>
@@ -290,6 +299,8 @@
                   </select>
                 </div>
               </div>
+              <p id="match-summary" class="hint"></p>
+              <div id="battle-rosters"></div>
             </section>
           </div>
           <aside class="side-column">
