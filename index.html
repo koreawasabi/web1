@@ -96,6 +96,19 @@
       .draft-pick:hover { border-color: var(--blue); }
       .draft-pick .empty { color: var(--muted); }
       .draft-pick .remove { color: var(--muted); font-size: .72rem; }
+      .map-advice { margin-top: 18px; padding: 14px; border: 1px solid #455774; border-radius: 12px; background: linear-gradient(145deg, rgba(32,45,64,.9), rgba(17,24,36,.9)); }
+      .map-advice-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+      .map-advice-note { margin: 6px 0 12px; color: var(--muted); font-size: .76rem; }
+      .map-advice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .map-advice-group { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; }
+      .map-advice-group h4 { margin: 0 0 8px; font-size: .82rem; }
+      .map-advice-group.recommended h4 { color: var(--green); }
+      .map-advice-group.reconsider h4 { color: #ffb0b5; }
+      .map-advice-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      .map-advice-hero { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 8px; }
+      .map-advice-hero img { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 7px; background: #202838; object-fit: cover; }
+      .map-advice-hero strong { display: block; font-size: .76rem; }
+      .map-advice-hero span { display: block; color: var(--muted); font-size: .7rem; line-height: 1.35; }
       .draft-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
       .primary-button, .secondary-button {
         min-height: 44px;
@@ -188,6 +201,13 @@
         .save-state { max-width: 90px; }
         .card { padding: 14px; border-radius: 13px; }
         .setup-grid, .draft-grid { grid-template-columns: 1fr; }
+        .map-advice { padding: 10px; }
+        .map-advice-grid { gap: 7px; }
+        .map-advice-group { padding: 8px 6px; }
+        .map-advice-hero { grid-template-columns: 28px minmax(0, 1fr); gap: 5px; }
+        .map-advice-hero img { width: 28px; height: 30px; }
+        .map-advice-hero strong { font-size: .7rem; }
+        .map-advice-hero span { font-size: .65rem; }
         .draft-actions { display: grid; }
         .draft-actions button { width: 100%; }
         .hero-results { grid-template-columns: 1fr; }
@@ -254,6 +274,24 @@
               </div>
             </fieldset>
           </div>
+          <section id="map-advice" class="map-advice" aria-labelledby="map-advice-heading" aria-live="polite" hidden>
+            <div class="map-advice-heading">
+              <h3 id="map-advice-heading">전장별 영웅 가이드</h3>
+              <span id="map-advice-map" class="subtle"></span>
+            </div>
+            <p id="map-advice-focus" class="map-advice-note"></p>
+            <div class="map-advice-grid">
+              <section class="map-advice-group recommended" aria-labelledby="map-recommended-heading">
+                <h4 id="map-recommended-heading">추천해 볼 영웅</h4>
+                <ul id="map-recommended" class="map-advice-list"></ul>
+              </section>
+              <section class="map-advice-group reconsider" aria-labelledby="map-reconsider-heading">
+                <h4 id="map-reconsider-heading">비추천 · 맵에서 우선순위 낮음</h4>
+                <ul id="map-reconsider" class="map-advice-list"></ul>
+              </section>
+            </div>
+            <p class="map-advice-note" style="margin:10px 0 0">맵 목표와 라인 구조를 바탕으로 한 참고 의견이며, 승률 통계나 절대적인 픽·밴 지침은 아닙니다. 조합, 상대 선택, 플레이어 숙련도에 따라 달라질 수 있습니다.</p>
+          </section>
           <div class="draft-grid" style="margin-top:18px">
             <section class="team-box" aria-label="우리 팀 밴픽">
               <div class="team-title"><span class="dot"></span>우리 팀</div>
@@ -400,6 +438,78 @@
           "하나무라 사원": "https://static.wikia.nocookie.net/allstars_gamepedia/images/1/14/Hanamura_Temple_Loading_Screen.png/revision/latest?cb=20180821064506",
           "블랙하트 항만": "https://static.wikia.nocookie.net/allstars_gamepedia/images/a/ac/Blackheart%27s_Bay_loading_screen.jpg/revision/latest?cb=20140213200757"
         };
+        const mapHeroAdvice = {
+          "거미 여왕의 무덤": {
+            focus: "짧은 라인 간 이동과 보석 반납을 두고 교전이 자주 일어납니다.",
+            recommended: [["줄", "빠른 라인 정리와 다수 대상 압박"], ["제이나", "강한 광역 정리와 좁은 길목 견제"], ["실바나스", "라인 압박과 용병 캠프 활용"]],
+            reconsider: [["노바", "라인 정리와 캠프 처리에 시간이 걸릴 수 있음"], ["발리라", "짧은 은신 기습 외에 라인 압박 기여가 제한적"]]
+          },
+          "공포의 정원": {
+            focus: "넓은 전장에서 라인·용병 운영과 오브젝트 합류 타이밍이 중요합니다.",
+            recommended: [["폴스타트", "넓은 맵에서 빠른 합류와 라인 운영"], ["데하카", "맵을 가로지르는 합류와 사이드 압박"], ["실바나스", "용병 캠프와 구조물 압박에 강점"]],
+            reconsider: [["노바", "라인 정리와 용병 운영에 기여가 적은 편"], ["발리라", "넓게 흩어진 라인에 대응하기 어려울 수 있음"]]
+          },
+          "파멸의 탑": {
+            focus: "제단 점령전에서 원거리 견제와 채널 방해, 빠른 합류가 유용합니다.",
+            recommended: [["한조", "긴 사거리 견제와 제단 주변 시야 확인"], ["정크랫", "좁은 진입로 견제와 채널 방해"], ["폴스타트", "제단 교전에 빠르게 합류"]],
+            reconsider: [["도살자", "제단 주변 원거리 견제에 접근 부담이 큼"], ["일리단", "진입로 통제와 원거리 견제 대응에 주의 필요"]]
+          },
+          "불지옥 신단": {
+            focus: "신단에서 다수의 수호자를 빠르게 처치하는 광역 피해가 중요합니다.",
+            recommended: [["제이나", "신단 수호자와 한타에 강한 광역 피해"], ["굴단", "지속적인 광역 피해와 라인 정리"], ["라그나로스", "신단 정리와 구조물 방어에 강점"]],
+            reconsider: [["노바", "다수의 수호자를 정리하는 속도가 느린 편"], ["발리라", "신단 광역 정리와 지속 압박에 한계가 있음"]]
+          },
+          "브락시스 항전": {
+            focus: "두 라인의 지속 압박과 강한 1대1·라인 유지 능력이 중요합니다.",
+            recommended: [["렉사르", "라인 유지와 점령지 압박에 강점"], ["자가라", "라인 압박과 오브젝트 주변 시야 확보"], ["데하카", "사이드 라인 운영 후 한타에 합류"]],
+            reconsider: [["발리라", "지속적인 라인 정리와 점령 압박이 부족할 수 있음"], ["노바", "라인 유지와 오브젝트 점령 기여가 제한적"]]
+          },
+          "볼스카야 공장": {
+            focus: "점령지 주변 교전과 수송로 통제, 오브젝트 호위가 핵심입니다.",
+            recommended: [["메이", "좁은 길목 차단과 점령지 교전 통제"], ["정크랫", "수송로 견제와 진입 방해"], ["아나", "안전한 거리에서 팀 지원과 지속 회복"]],
+            reconsider: [["발리라", "팀 단위 점령전에서 진입 각을 잡기 어려울 수 있음"], ["도살자", "좁은 점령지에서 진입이 읽히면 역공 위험이 큼"]]
+          },
+          "저주받은 골짜기": {
+            focus: "넓은 맵에서 공물을 두고 벌어지는 장시간 한타와 빠른 합류가 중요합니다.",
+            recommended: [["폴스타트", "먼 거리의 공물 교전에 빠르게 합류"], ["정예 타우렌 족장", "공물 주변 한타를 여는 군중 제어"], ["말퓨리온", "장시간 대치에서 팀 유지력 지원"]],
+            reconsider: [["노바", "공물 대치에서 라인 정리와 지속 교전이 약한 편"], ["발리라", "정면 대치가 길어질수록 기습 기회가 줄 수 있음"]]
+          },
+          "용의 둥지": {
+            focus: "상·하단 제단을 나눠 관리하므로 강한 솔로 라인과 빠른 합류가 도움됩니다.",
+            recommended: [["렉사르", "강한 솔로 라인과 제단 유지력"], ["데하카", "제단 압박 후 주요 교전에 합류"], ["폴스타트", "반대편 제단과 중앙 교전에 신속히 이동"]],
+            reconsider: [["노바", "제단을 오래 유지하거나 라인을 밀기 어려운 편"], ["발리라", "넓게 나뉜 라인에 지속 압박을 주기 어려움"]]
+          },
+          "영원의 전쟁터": {
+            focus: "불멸자 처치 속도와 이를 둘러싼 교전 모두에 대응해야 합니다.",
+            recommended: [["타이커스", "불멸자와 전방 영웅 모두에 지속 피해"], ["한조", "불멸자 피해와 원거리 교전 기여"], ["아나", "안전한 거리에서 팀 유지력과 지원"]],
+            reconsider: [["노바", "불멸자 처치와 장시간 교전 기여가 낮은 편"], ["발리라", "불멸자 대치 중에는 기습 기회가 제한됨"]]
+          },
+          "하늘 사원": {
+            focus: "사원 점령과 넓은 라인 운영을 병행하는 능력이 유용합니다.",
+            recommended: [["폴스타트", "사원 교전에 빠르게 합류하고 라인을 운영"], ["데하카", "넓은 맵에서 사이드 압박 후 합류"], ["실바나스", "사원 점령 중 구조물과 라인 압박"]],
+            reconsider: [["노바", "사원 점령과 라인 운영에 기여가 제한적"], ["발리라", "넓은 맵의 빠른 라인 대응에 어려움이 있을 수 있음"]]
+          },
+          "핵탄두 격전지": {
+            focus: "전장이 넓게 펼쳐져 글로벌 이동기와 사이드 라인 운영이 빛납니다.",
+            recommended: [["폴스타트", "넓은 전장에서 신속한 합류와 라인 이동"], ["데하카", "글로벌 합류와 사이드 라인 압박"], ["아바투르", "넓은 맵에서 원거리 라인 지원과 운영"]],
+            reconsider: [["도살자", "합류 거리가 길어지면 교전 기회를 놓칠 수 있음"], ["일리단", "넓은 맵에서 팀원과 함께 움직이기 까다로울 수 있음"]]
+          },
+          "알터랙 고개": {
+            focus: "호위 목표와 넓은 길목 교전에서 라인 정리·지역 통제가 중요합니다.",
+            recommended: [["요한나", "안정적인 전방 유지와 길목 교전"], ["한조", "원거리 견제와 호위 경로 시야 확인"], ["폴스타트", "호위 목표와 사이드 라인 사이 빠른 이동"]],
+            reconsider: [["노바", "호위 목표 정리와 정면 교전 기여가 제한적"], ["발리라", "호위 경로에서 기습 진입이 노출될 위험이 있음"]]
+          },
+          "하나무라 사원": {
+            focus: "화물 호위 경로를 통제하고 용병 캠프로 압박을 분산해야 합니다.",
+            recommended: [["정크랫", "화물 경로의 좁은 진입로 견제"], ["한조", "원거리에서 경로를 확인하고 화물 주변 견제"], ["폴스타트", "화물과 용병 압박 사이 빠른 합류"]],
+            reconsider: [["도살자", "화물 경로 정면 진입에서 집중 공격을 받기 쉬움"], ["발리라", "화물 호위 중 정면 대치 기여가 낮을 수 있음"]]
+          },
+          "블랙하트 항만": {
+            focus: "라인·용병 운영으로 금화를 모으고 안전하게 반납하는 흐름이 중요합니다.",
+            recommended: [["실바나스", "빠른 라인 정리와 용병 캠프 압박"], ["폴스타트", "넓은 맵에서 반납 지점 교전에 신속히 합류"], ["레오릭", "라인 유지와 구조물 압박을 함께 수행"]],
+            reconsider: [["노바", "금화 수급을 위한 라인·캠프 운영이 약한 편"], ["도살자", "라인 운영과 금화 반납 중 기습 대응에 부담이 큼"]]
+          }
+        };
         const defaultState = () => ({
           phase: "prep", map: "", draftOrder: "", draft: Object.fromEntries(
             Object.entries(slots).map(([key, value]) => [key, Array(value.count).fill("")])
@@ -513,6 +623,44 @@
           const mapText = state.map || "전장 미선택";
           const orderText = state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "순서 미선택";
           return `${mapText} · ${orderText} · 밴픽 ${chosen}/${total} 선택`;
+        }
+
+        function renderMapAdvice() {
+          const section = document.querySelector("#map-advice");
+          const advice = mapHeroAdvice[state.map];
+          section.hidden = !advice;
+          if (!advice) return;
+
+          document.querySelector("#map-advice-map").textContent = state.map;
+          document.querySelector("#map-advice-focus").textContent = advice.focus;
+          for (const [id, heroes] of [
+            ["map-recommended", advice.recommended],
+            ["map-reconsider", advice.reconsider]
+          ]) {
+            const list = document.querySelector(`#${id}`);
+            list.replaceChildren();
+            for (const [hero, reason] of heroes) {
+              const item = document.createElement("li");
+              item.className = "map-advice-hero";
+              const portrait = heroPortraits[hero];
+              if (portrait) {
+                const image = document.createElement("img");
+                image.src = `https://nexuscompendium.com/images/portraits/${portrait}.png`;
+                image.alt = "";
+                image.loading = "lazy";
+                image.addEventListener("error", () => image.hidden = true, { once: true });
+                item.append(image);
+              }
+              const description = document.createElement("div");
+              const name = document.createElement("strong");
+              name.textContent = hero;
+              const note = document.createElement("span");
+              note.textContent = reason;
+              description.append(name, note);
+              item.append(description);
+              list.append(item);
+            }
+          }
         }
 
         function renderHeroResults() {
@@ -706,6 +854,7 @@
         function render() {
           updateMapBackground();
           document.querySelector("#map").value = state.map;
+          renderMapAdvice();
           const order = document.querySelector(`input[name="draft-order"][value="${state.draftOrder}"]`);
           if (order) order.checked = true;
           document.querySelector("#level").value = state.level;
@@ -724,6 +873,7 @@
         document.querySelector("#map").addEventListener("change", (event) => {
           state.map = event.target.value;
           updateMapBackground();
+          renderMapAdvice();
           document.querySelector("#draft-status").textContent = draftProgress();
           document.querySelector("#match-summary").textContent =
             `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "밴픽 순서 미선택"}`;
