@@ -174,14 +174,26 @@
       .recommendation { position: sticky; top: 16px; border-color: #455774; background: linear-gradient(145deg, #202d40, #191f2c 72%); }
       .recommendation .card-heading { margin-bottom: 11px; }
       .recommendation-label { color: var(--gold); font-size: .76rem; font-weight: 800; letter-spacing: .1em; }
+      .coach-status { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 12px; }
+      .coach-badge { display: inline-flex; min-height: 25px; align-items: center; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; background: #111824; color: #d4dceb; font-size: .72rem; font-weight: 800; }
+      .coach-badge[data-urgency="긴급"] { border-color: #9b454b; background: #53282e; color: #ffb6bb; }
+      .coach-badge[data-urgency="주의"] { border-color: #94703c; background: #46371f; color: #ffdf9a; }
+      .coach-badge[data-urgency="기회"] { border-color: #386b55; background: #224c3a; color: #a5f0c7; }
+      .coach-badge[data-urgency="준비"] { border-color: #426b8c; background: #1e3a52; color: #a7dcff; }
+      .coach-badge[data-urgency="정보 부족"] { border-color: #75633b; background: #39311f; color: #ffe2a0; }
+      .coach-diagnosis { margin: 0 0 9px; color: #aab8cc; font-size: .78rem; font-weight: 700; }
       .survival-summary { display: grid; gap: 6px; margin: 0 0 14px; }
       .survival-team { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; font-size: .82rem; }
       .survival-team strong { font-weight: 800; }
       .survival-team.ours-trailing strong, .survival-team.enemy-leading strong { color: #ff9298; }
       .survival-team.ours-leading strong, .survival-team.enemy-trailing strong { color: #91e6b8; }
       .action { margin: 0; padding-left: 12px; border-left: 4px solid var(--blue); font-size: clamp(1.45rem, 3vw, 2.1rem); font-weight: 850; line-height: 1.2; letter-spacing: -.04em; }
-      .reason { margin: 12px 0 0; color: #edf2fa; font-size: .96rem; font-weight: 600; }
+      .reason { margin: 12px 0 0; }
+      .reason strong, .warning strong { display: block; margin-bottom: 3px; color: var(--muted); font-size: .72rem; letter-spacing: .04em; }
+      .reason p { margin: 0; color: #edf2fa; font-size: .96rem; font-weight: 600; }
       .warning { margin: 12px 0 0; padding: 9px 11px; border-left: 3px solid var(--gold); border-radius: 5px; background: #ffd16612; color: #ffe2a0; font-size: .82rem; }
+      .warning strong { color: #ffe2a0; }
+      .warning p { margin: 0; }
       details { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
       summary { color: #c8d4e6; font-size: .85rem; font-weight: 700; cursor: pointer; }
       .analysis { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: .82rem; }
@@ -345,10 +357,22 @@
             <section class="card recommendation" aria-labelledby="recommend-heading">
               <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
               <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
+              <div class="coach-status" aria-label="추천 분류">
+                <span id="urgency" class="coach-badge" data-urgency="정보 부족">정보 부족</span>
+                <span id="recommendation-category" class="coach-badge">운영</span>
+                <span id="evidence-level" class="coach-badge">근거 제한</span>
+              </div>
+              <p id="diagnosis" class="coach-diagnosis"></p>
               <div id="survival-summary" class="survival-summary" aria-live="polite"></div>
               <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
-              <p id="reason" class="reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
-              <p id="warning" class="warning" hidden></p>
+              <div class="reason">
+                <strong>판단 근거</strong>
+                <p id="reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
+              </div>
+              <div id="warning" class="warning" hidden>
+                <strong>주의</strong>
+                <p id="warning-text"></p>
+              </div>
               <details>
                 <summary>상세 분석 보기</summary>
                 <ul id="analysis" class="analysis"></ul>
@@ -762,12 +786,46 @@
             action: "안전하게 모여 라인 경험치를 챙기세요",
             reason: "확인된 정보가 적어 무리한 교전보다 안전한 파밍이 낫습니다.",
             warning: "생존·레벨·오브젝트 정보를 더 입력하면 추천이 구체적으로 바뀝니다.",
+            urgency: "정보 부족",
+            category: "기본 운영",
+            diagnosis: "입력 정보가 충분하지 않아 안전한 기본 운영을 우선합니다.",
+            evidence: "제한적",
             analysis: lines
           };
-          const set = (action, reason, warning = "") => ({
-            ...base, action, reason,
-            warning: warning || (incomplete ? "밴픽·레벨·오브젝트 정보가 일부 미확인입니다. 실제 전황을 확인하고 무리한 진입은 피하세요." : "")
-          });
+          const set = (action, reason, warning = "") => {
+            const urgency = oursAlive <= 2 && oursAlive < enemyAlive
+              ? "긴급"
+              : enemyAlive <= 2 && oursAlive >= enemyAlive + 2
+                ? "기회"
+                : state.level === "behind" || state.objective === "enemy"
+                  ? "주의"
+                  : state.objective === "contested" || state.objective === "soon"
+                    ? "준비"
+                    : oursAlive >= enemyAlive + 2 || state.level === "ahead"
+                      ? "기회"
+                      : "기본";
+            const levelText = { unknown: "", ahead: "레벨 우위", even: "레벨 동수", behind: "레벨 열세" }[state.level];
+            const survivalText = oursAlive < enemyAlive ? "생존 인원 열세" : oursAlive > enemyAlive ? "생존 인원 우위" : "생존 인원 동수";
+            const objectiveText = {
+              unknown: "", soon: "오브젝트 생성 임박", ours: "우리 팀 오브젝트 진행",
+              contested: "오브젝트 경합", enemy: "상대 팀 오브젝트 진행", secured: "오브젝트 확보"
+            }[state.objective];
+            const category = ["soon", "ours", "contested", "enemy", "secured"].includes(state.objective)
+              ? "오브젝트 운영"
+              : state.level === "behind" || state.level === "ahead"
+                ? "레벨·라인 운영"
+                : "교전·라인 운영";
+            return {
+              ...base,
+              action,
+              reason,
+              warning: warning || (incomplete ? "일부 정보가 미확인입니다. 실제 전황과 합류 위치를 확인한 뒤 실행하세요." : ""),
+              urgency,
+              category,
+              diagnosis: [survivalText, levelText, objectiveText].filter(Boolean).join(" · "),
+              evidence: incomplete ? "제한적" : "입력 반영"
+            };
+          };
 
           if (oursAlive <= 2 && oursAlive < enemyAlive) {
             return set("후퇴해 시간을 버세요", "우리 팀 생존 인원이 적어 정면 교전에서 수적 열세입니다.", "아군이 다시 합류할 때까지 오브젝트 경합과 깊은 진입을 피하세요.");
@@ -809,7 +867,11 @@
             return set("오브젝트 이득을 활용해 라인을 정리하세요", "이번 오브젝트는 확보했습니다. 다음 목표를 준비하며 불필요한 추격을 삼가세요.");
           }
           if (missingHeroes || state.level === "unknown" || state.objective === "unknown") {
-            return { ...base, warning: missingHeroes ? "밴픽 영웅이 비어 있고 전황 일부가 미확인입니다. 실제 상황을 확인한 뒤 행동하세요." : base.warning };
+            return {
+              ...base,
+              warning: missingHeroes ? "밴픽 영웅이 비어 있고 전황 일부가 미확인입니다. 실제 상황을 확인한 뒤 행동하세요." : base.warning,
+              diagnosis: missingHeroes ? "영웅 밴픽 및 전황 정보 확인 필요" : "전황 정보 추가 입력 필요"
+            };
           }
           return set("팀과 함께 안전한 라인을 정리하세요", "뚜렷한 우위가 확인되지 않아 고립을 피하고 다음 오브젝트에 대비하세요.");
         }
@@ -834,10 +896,16 @@
             row.append(teamLabel, count);
             survivalSummary.append(row);
           }
+          const urgency = document.querySelector("#urgency");
+          urgency.textContent = recommendation.urgency;
+          urgency.dataset.urgency = recommendation.urgency;
+          document.querySelector("#recommendation-category").textContent = recommendation.category;
+          document.querySelector("#evidence-level").textContent = `근거 ${recommendation.evidence}`;
+          document.querySelector("#diagnosis").textContent = recommendation.diagnosis;
           document.querySelector("#recommendation").textContent = recommendation.action;
           document.querySelector("#reason").textContent = recommendation.reason;
           const warning = document.querySelector("#warning");
-          warning.textContent = recommendation.warning;
+          document.querySelector("#warning-text").textContent = recommendation.warning;
           warning.hidden = !recommendation.warning;
           document.querySelector("#analysis").innerHTML = recommendation.analysis.map((line) => `<li>${line}</li>`).join("");
         }
