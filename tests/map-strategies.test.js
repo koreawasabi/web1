@@ -386,6 +386,39 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   assert.match(html, /<details id="detailed-inputs" class="full-controls">/);
 });
 
+test("bilingual encouragement quote is shown above the page and rotates without an immediate repeat", () => {
+  const { coach, querySelector, runIntervals } = loadCoachHarness();
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const quotes = [
+    ["It ain't over till it's over.", "끝날 때까지 끝난 게 아니다."],
+    ["One good fight can change everything.", "단 한 번의 좋은 한타가 모든 것을 바꿀 수 있다."],
+    ["As long as the Nexus stands, you have a chance.", "핵이 살아 있는 한, 기회는 남아 있다."],
+    ["You can't control your teammates. You can control your next decision.", "팀원은 통제할 수 없다. 하지만 다음 판단은 통제할 수 있다."],
+    ["Don't tilt. Adapt.", "멘탈 무너지지 마. 적응해."],
+    ["Win the game, not the argument.", "말싸움에서 이기지 말고 게임에서 이겨라."],
+    ["A mistake is only wasted if you learn nothing from it.", "실수에서 배우지 못할 때, 그 실수는 낭비가 된다."],
+    ["Play the next fight, not the last one.", "지난 한타가 아니라 다음 한타를 플레이해라."],
+    ["Your last death is not your next decision.", "방금 죽었다고 다음 판단까지 망칠 필요는 없다."],
+    ["You don't need to carry every fight. Just make the next one better.", "모든 한타를 캐리할 필요는 없다. 다음 한타를 더 잘하면 된다."],
+    ["The goal is not to play perfectly. It's to make fewer losing decisions.", "완벽한 플레이가 아니라, 패배로 이어지는 판단을 줄이는 게 목표다."],
+    ["You can lose the game without losing your composure.", "게임은 져도 평정심까지 잃을 필요는 없다."]
+  ];
+  const english = querySelector("#coach-quote-en").textContent;
+  const korean = querySelector("#coach-quote-ko").textContent;
+  const initialIndex = quotes.findIndex(([en, ko]) => en === english && ko === korean);
+
+  assert.ok(initialIndex >= 0, "initial English and Korean quote is a matching pair");
+  assert.equal((html.match(/\["(?:It ain't over|One good fight|As long as the Nexus|You can't control|Don't tilt|Win the game|A mistake|Play the next fight|Your last death|You don't need to carry|The goal is not|You can lose the game)/g) || []).length, 12);
+  assert.ok(html.indexOf('class="coach-quote"') < html.indexOf("<header>"), "quote appears above the page header");
+  assert.match(html, /window\.setInterval\(rotateCoachQuote, 60000\)/, "each quote remains visible for one minute");
+
+  runIntervals();
+  const nextEnglish = querySelector("#coach-quote-en").textContent;
+  const nextKorean = querySelector("#coach-quote-ko").textContent;
+  assert.ok(quotes.some(([en, ko]) => en === nextEnglish && ko === nextKorean), "next quote remains a matching pair");
+  assert.notEqual(nextEnglish, english, "the same quote is not repeated consecutively");
+});
+
 test("new match resets match data while resume restores the saved match", () => {
   const { coach, querySelector, getConfirmCalls, setConfirmResult } = loadCoachHarness();
   const state = coach.defaultState();

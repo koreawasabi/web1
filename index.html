@@ -45,6 +45,10 @@
       }
       .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 56px; }
       header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+      .coach-quote { margin: 0 0 18px; padding: 11px 16px; border: 1px solid #455774; border-left: 3px solid var(--gold); border-radius: 10px; background: rgba(17,24,36,.88); text-align: center; }
+      .coach-quote p { margin: 0; font-size: .88rem; line-height: 1.55; }
+      .coach-quote-en { color: var(--muted); }
+      .coach-quote-ko { margin-top: 2px !important; color: var(--text); font-weight: 700; }
       .eyebrow { margin: 0 0 4px; color: var(--blue); font-size: .76rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
       h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.35rem); line-height: 1.15; letter-spacing: -.04em; }
       .subtitle { margin: 8px 0 0; color: var(--muted); font-size: .95rem; }
@@ -306,6 +310,8 @@
       }
       @media (max-width: 600px) {
         .shell { width: min(100% - 20px, 520px); padding-top: 18px; }
+        .coach-quote { margin-bottom: 14px; padding: 10px 12px; }
+        .coach-quote p { font-size: .82rem; }
         header { align-items: flex-start; margin-bottom: 16px; }
         .save-state { max-width: 90px; }
         .card { padding: 14px; border-radius: 13px; }
@@ -350,6 +356,10 @@
   </head>
   <body>
     <div class="shell">
+      <aside class="coach-quote" aria-label="게임 마음가짐" aria-live="polite">
+        <p id="coach-quote-en" class="coach-quote-en"></p>
+        <p id="coach-quote-ko" class="coach-quote-ko" lang="ko"></p>
+      </aside>
       <header>
         <div>
           <p class="eyebrow">Heroes of the Storm · Match Coach</p>
@@ -678,6 +688,20 @@
         "use strict";
 
         const STORAGE_KEY = "hots-strategy-coach-state-v1";
+        const coachQuotes = [
+          ["It ain't over till it's over.", "끝날 때까지 끝난 게 아니다."],
+          ["One good fight can change everything.", "단 한 번의 좋은 한타가 모든 것을 바꿀 수 있다."],
+          ["As long as the Nexus stands, you have a chance.", "핵이 살아 있는 한, 기회는 남아 있다."],
+          ["You can't control your teammates. You can control your next decision.", "팀원은 통제할 수 없다. 하지만 다음 판단은 통제할 수 있다."],
+          ["Don't tilt. Adapt.", "멘탈 무너지지 마. 적응해."],
+          ["Win the game, not the argument.", "말싸움에서 이기지 말고 게임에서 이겨라."],
+          ["A mistake is only wasted if you learn nothing from it.", "실수에서 배우지 못할 때, 그 실수는 낭비가 된다."],
+          ["Play the next fight, not the last one.", "지난 한타가 아니라 다음 한타를 플레이해라."],
+          ["Your last death is not your next decision.", "방금 죽었다고 다음 판단까지 망칠 필요는 없다."],
+          ["You don't need to carry every fight. Just make the next one better.", "모든 한타를 캐리할 필요는 없다. 다음 한타를 더 잘하면 된다."],
+          ["The goal is not to play perfectly. It's to make fewer losing decisions.", "완벽한 플레이가 아니라, 패배로 이어지는 판단을 줄이는 게 목표다."],
+          ["You can lose the game without losing your composure.", "게임은 져도 평정심까지 잃을 필요는 없다."]
+        ];
         const heroList = [
           "가로쉬","가즈로","갈","겐지","굴단","길 잃은 바이킹","나지보","노바","누더기","데커드 케인",
           "데스윙","데하카","도살자","디아블로","라그나로스","레가르","레이너","레오릭","렉사르","루나라",
@@ -914,8 +938,18 @@
         const saveState = document.querySelector("#save-state");
         const heroDialog = document.querySelector("#hero-dialog");
         const heroSearch = document.querySelector("#hero-search");
+        let lastCoachQuoteIndex = -1;
         let activeSlot = null;
         let state = defaultState();
+
+        function rotateCoachQuote() {
+          const choices = coachQuotes
+            .map((_, index) => index)
+            .filter((index) => index !== lastCoachQuoteIndex);
+          lastCoachQuoteIndex = choices[Math.floor(Math.random() * choices.length)];
+          document.querySelector("#coach-quote-en").textContent = coachQuotes[lastCoachQuoteIndex][0];
+          document.querySelector("#coach-quote-ko").textContent = coachQuotes[lastCoachQuoteIndex][1];
+        }
 
         function normalizeState(value) {
           const fresh = defaultState();
@@ -2255,6 +2289,8 @@
         }
 
         loadState();
+        rotateCoachQuote();
+        window.setInterval(rotateCoachQuote, 60000);
         render();
         document.querySelector("#map").addEventListener("change", (event) => {
           state.map = event.target.value;
