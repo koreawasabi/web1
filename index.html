@@ -169,6 +169,8 @@
       .battle-team { min-width: 0; }
       .team-title .team-count { margin-left: auto; color: var(--muted); font-size: .77rem; font-weight: 600; }
       .level-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 14px; }
+      .level-input { width: 100%; }
+      .level-stage-summary { margin: -6px 0 14px; color: var(--muted); font-size: .76rem; }
       .objective-options { display: flex; flex-wrap: wrap; gap: 10px 16px; }
       .objective-options label { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; }
       .recommendation { position: sticky; top: 16px; border-color: #455774; background: linear-gradient(145deg, #202d40, #191f2c 72%); }
@@ -334,13 +336,17 @@
               </div>
               <div class="level-controls">
                 <div>
-                  <label class="field-label" for="level">우리 팀 레벨 상황</label>
-                  <select id="level">
-                    <option value="unknown">모름</option><option value="ahead">우리 팀 우위</option>
-                    <option value="even">동레벨</option><option value="behind">우리 팀 열세</option>
-                  </select>
+                  <label class="field-label" for="ours-level">우리 팀 현재 레벨 (1–30)</label>
+                  <input id="ours-level" class="level-input" type="number" min="1" max="30" step="1" inputmode="numeric" placeholder="모르면 비워두기">
                 </div>
                 <div>
+                  <label class="field-label" for="enemy-level">상대 팀 현재 레벨 (1–30)</label>
+                  <input id="enemy-level" class="level-input" type="number" min="1" max="30" step="1" inputmode="numeric" placeholder="모르면 비워두기">
+                </div>
+              </div>
+              <p id="level-stage-summary" class="level-stage-summary" role="status" aria-live="polite">양 팀 레벨을 입력하면 게임 단계와 특성 구간 우위를 표시합니다. 특성 구간: 1 · 4 · 7 · 10 · 13 · 16 · 20레벨.</p>
+              <div class="level-controls">
+                <div style="grid-column:1 / -1">
                   <label class="field-label" for="objective">오브젝트 상황</label>
                   <select id="objective">
                     <option value="unknown">모름 / 판단 전</option><option value="soon">곧 생성</option>
@@ -541,7 +547,7 @@
           battle: Object.fromEntries(["ours", "enemy"].map((team) => [
             team, Array.from({ length: 5 }, () => ({ hero: "", alive: true, respawn: 0, ultimate: "unknown" }))
           ])),
-          level: "unknown", objective: "unknown"
+          oursLevel: null, enemyLevel: null, objective: "unknown"
         });
         const saveState = document.querySelector("#save-state");
         const heroDialog = document.querySelector("#hero-dialog");
@@ -564,7 +570,10 @@
               }
             }
           }
-          if (value.level && ["unknown", "ahead", "even", "behind"].includes(value.level)) fresh.level = value.level;
+          for (const team of ["ours", "enemy"]) {
+            const level = value[`${team}Level`];
+            if (Number.isInteger(level) && level >= 1 && level <= 30) fresh[`${team}Level`] = level;
+          }
           if (value.objective && ["unknown", "soon", "ours", "contested", "enemy", "secured"].includes(value.objective)) fresh.objective = value.objective;
           for (const team of ["ours", "enemy"]) {
             if (Array.isArray(value.battle?.[team])) {
@@ -712,6 +721,41 @@
           return picks[index] || "";
         }
 
+        const talentLevels = [1, 4, 7, 10, 13, 16, 20];
+
+        function levelDetails(level) {
+          if (!Number.isInteger(level) || level < 1 || level > 30) return null;
+          const talentLevel = talentLevels.filter((tier) => tier <= level).at(-1);
+          const nextTalentLevel = talentLevels.find((tier) => tier > level);
+          const phase = level < 10 ? "초반" : level < 20 ? "중반" : "후반";
+          const talentText = nextTalentLevel
+            ? `${talentLevel}레벨 특성 확보 · ${nextTalentLevel}레벨 특성 전`
+            : "20레벨 특성 이후";
+          return { talentLevel, talentIndex: talentLevels.indexOf(talentLevel), phase, talentText };
+        }
+
+        function renderLevelSummary() {
+          const ours = levelDetails(state.oursLevel);
+          const enemy = levelDetails(state.enemyLevel);
+          const summary = document.querySelector("#level-stage-summary");
+          if (!ours || !enemy) {
+            summary.textContent = "양 팀 레벨을 입력하면 게임 단계와 특성 구간 우위를 표시합니다. 특성 구간: 1 · 4 · 7 · 10 · 13 · 16 · 20레벨.";
+            return;
+          }
+          const phase = Math.max(state.oursLevel, state.enemyLevel) < 10
+            ? "초반"
+            : Math.max(state.oursLevel, state.enemyLevel) < 20
+              ? "중반"
+              : "후반";
+          const talentEdge = ours.talentIndex > enemy.talentIndex
+            ? `우리 팀 ${ours.talentLevel}레벨 특성 우위`
+            : ours.talentIndex < enemy.talentIndex
+              ? `상대 팀 ${enemy.talentLevel}레벨 특성 우위`
+              : "특성 구간 동수";
+          summary.textContent =
+            `${phase} · 우리 ${state.oursLevel}레벨 (${ours.talentText}) · 상대 ${state.enemyLevel}레벨 (${enemy.talentText}) · ${talentEdge}`;
+        }
+
         function renderRosters() {
           const root = document.querySelector("#battle-rosters");
           root.innerHTML = ["ours", "enemy"].map((team) => {
@@ -770,22 +814,45 @@
           const enemy = state.battle.enemy;
           const oursAlive = ours.filter((member) => member.alive).length;
           const enemyAlive = enemy.filter((member) => member.alive).length;
+          const levelsKnown = Number.isInteger(state.oursLevel) && Number.isInteger(state.enemyLevel);
+          const levelDifference = levelsKnown ? state.oursLevel - state.enemyLevel : null;
+          const oursLevelInfo = levelDetails(state.oursLevel);
+          const enemyLevelInfo = levelDetails(state.enemyLevel);
+          const talentDifference = levelsKnown ? oursLevelInfo.talentIndex - enemyLevelInfo.talentIndex : null;
+          const levelDisadvantage = levelsKnown && (levelDifference <= -2 || talentDifference < 0);
+          const levelAdvantage = levelsKnown && (levelDifference >= 2 || talentDifference > 0);
+          const isEarlyGame = levelsKnown && state.oursLevel < 10 && state.enemyLevel < 10;
+          const isLateGame = levelsKnown && Math.max(state.oursLevel, state.enemyLevel) >= 20;
           const missingHeroes = ["ours", "enemy"].some((team) =>
             state.battle[team].some((member, index) => !pickedHero(team, index))
           );
-          const incomplete = missingHeroes || state.level === "unknown" || state.objective === "unknown";
+          const incomplete = missingHeroes || !levelsKnown || state.objective === "unknown";
           const lines = [
             `생존 인원: 우리 팀 ${oursAlive}/5 · 상대 팀 ${enemyAlive}/5`,
-            `레벨: ${{unknown:"미확인",ahead:"우리 팀 우위",even:"동레벨",behind:"우리 팀 열세"}[state.level]}`,
             `오브젝트: ${{unknown:"미확인",soon:"곧 생성",ours:"우리 팀 진행 중",contested:"경합 중",enemy:"상대 팀 진행 중",secured:"확보 완료"}[state.objective]}`
           ];
+          if (levelsKnown) {
+            const phase = Math.max(state.oursLevel, state.enemyLevel) < 10
+              ? "초반"
+              : Math.max(state.oursLevel, state.enemyLevel) < 20
+                ? "중반"
+                : "후반";
+            const talentEdge = talentDifference > 0
+              ? `우리 팀 특성 구간 우위 (${oursLevelInfo.talentLevel} vs ${enemyLevelInfo.talentLevel})`
+              : talentDifference < 0
+                ? `상대 팀 특성 구간 우위 (${oursLevelInfo.talentLevel} vs ${enemyLevelInfo.talentLevel})`
+                : "특성 구간 동수";
+            lines.push(`${phase} · 레벨 우리 ${state.oursLevel} / 상대 ${state.enemyLevel} (${levelDifference > 0 ? `+${levelDifference}` : levelDifference}) · ${talentEdge}`);
+          } else {
+            lines.push("레벨 및 특성 구간: 미입력");
+          }
           const readyOurs = ours.filter((member) => member.ultimate === "ready").length;
           const usedOurs = ours.filter((member) => member.ultimate === "used").length;
           lines.push(`우리 팀 궁극기: 가능 ${readyOurs} · 사용 ${usedOurs} · 미확인 ${5 - readyOurs - usedOurs}`);
           const base = {
             action: "안전하게 모여 라인 경험치를 챙기세요",
             reason: "확인된 정보가 적어 무리한 교전보다 안전한 파밍이 낫습니다.",
-            warning: "생존·레벨·오브젝트 정보를 더 입력하면 추천이 구체적으로 바뀝니다.",
+            warning: "생존·양 팀 레벨·오브젝트 정보를 더 입력하면 추천이 구체적으로 바뀝니다.",
             urgency: "정보 부족",
             category: "기본 운영",
             diagnosis: "입력 정보가 충분하지 않아 안전한 기본 운영을 우선합니다.",
@@ -797,14 +864,16 @@
               ? "긴급"
               : enemyAlive <= 2 && oursAlive >= enemyAlive + 2
                 ? "기회"
-                : state.level === "behind" || state.objective === "enemy"
+                : levelDisadvantage || state.objective === "enemy"
                   ? "주의"
                   : state.objective === "contested" || state.objective === "soon"
                     ? "준비"
-                    : oursAlive >= enemyAlive + 2 || state.level === "ahead"
+                    : oursAlive >= enemyAlive + 2 || levelAdvantage
                       ? "기회"
                       : "기본";
-            const levelText = { unknown: "", ahead: "레벨 우위", even: "레벨 동수", behind: "레벨 열세" }[state.level];
+            const levelText = levelsKnown
+              ? `${Math.max(state.oursLevel, state.enemyLevel) < 10 ? "초반" : Math.max(state.oursLevel, state.enemyLevel) < 20 ? "중반" : "후반"} · 레벨 ${state.oursLevel}-${state.enemyLevel} · ${talentDifference > 0 ? "특성 구간 우위" : talentDifference < 0 ? "특성 구간 열세" : "특성 구간 동수"}`
+              : "양 팀 레벨 미입력";
             const survivalText = oursAlive < enemyAlive ? "생존 인원 열세" : oursAlive > enemyAlive ? "생존 인원 우위" : "생존 인원 동수";
             const objectiveText = {
               unknown: "", soon: "오브젝트 생성 임박", ours: "우리 팀 오브젝트 진행",
@@ -812,7 +881,7 @@
             }[state.objective];
             const category = ["soon", "ours", "contested", "enemy", "secured"].includes(state.objective)
               ? "오브젝트 운영"
-              : state.level === "behind" || state.level === "ahead"
+              : levelDisadvantage || levelAdvantage
                 ? "레벨·라인 운영"
                 : "교전·라인 운영";
             return {
@@ -836,41 +905,68 @@
             }
             return set("가까운 안전한 목표를 함께 확보하세요", "상대 팀의 생존 인원이 적습니다. 무리한 추격보다 가까운 목표가 안전합니다.");
           }
-          if (state.level === "behind" && state.objective !== "secured") {
-            return set("교전을 피하고 경험치를 모으세요", "레벨 열세에서는 불리한 교전보다 라인 경험치 수급이 우선입니다.", "오브젝트가 이미 시작됐다면 인원과 진입 경로를 확인한 뒤 판단하세요.");
+          if (levelDisadvantage && state.objective !== "secured") {
+            const reason = talentDifference < 0
+              ? `상대 팀은 ${enemyLevelInfo.talentLevel}레벨 특성을 확보했지만 우리 팀은 ${oursLevelInfo.talentLevel}레벨 구간입니다.`
+              : `우리 팀이 레벨에서 ${Math.abs(levelDifference)}만큼 뒤처져 있습니다.`;
+            return set("특성 구간을 맞추며 불리한 교전을 피하세요", `${reason} 라인 경험치를 챙겨 다음 특성 구간에 합류하세요.`, "오브젝트가 이미 시작됐다면 인원과 진입 경로를 확인하고, 특성 열세 상태의 정면 교전은 신중히 판단하세요.");
           }
           if (state.objective === "enemy") {
+            if (isLateGame && oursAlive > enemyAlive && !levelDisadvantage) {
+              return set("팀을 모아 오브젝트 진입 경로를 확인하세요", "후반 오브젝트는 방치 비용이 큽니다. 생존 인원과 특성 구간의 우위를 활용하되, 단독 진입 없이 팀 합류를 먼저 확인하세요.");
+            }
+            if (isLateGame) {
+              return set("불리한 진입을 피하고 안전한 교환을 찾으세요", "상대 팀이 후반 오브젝트를 진행 중이지만 현재 합류·전투 우위가 확인되지 않습니다.", "핵심 구조물과 생존 인원을 확인하세요. 후반에는 무리한 진입으로 추가 사망을 내지 않는 것이 중요합니다.");
+            }
             return set("오브젝트에서 물러나 라인을 정리하세요", "상대가 오브젝트를 진행 중입니다. 수적·레벨 우위가 확인되지 않아 맞교전은 위험합니다.", "상대 사망이나 확실한 인원 우위를 확인하기 전에는 진입하지 마세요.");
           }
           if (state.objective === "contested") {
-            if (oursAlive > enemyAlive && (state.level === "ahead" || state.level === "even")) {
-              return set("팀을 모아 오브젝트에 합류하세요", "생존 인원 우위와 레벨 열세가 아닌 상황이라 함께 합류할 여지가 있습니다.");
+            if (oursAlive > enemyAlive && levelsKnown && levelDifference >= 0 && talentDifference >= 0) {
+              return set("팀을 모아 오브젝트에 합류하세요", isLateGame
+                ? "후반 오브젝트가 승패에 큰 영향을 줄 수 있습니다. 확인된 생존 인원·특성 우위를 활용하되 전원이 함께 움직이세요."
+                : isEarlyGame
+                  ? "초반 오브젝트도 중요하지만, 생존 인원과 특성 구간 우위를 확인했습니다. 합류 인원을 모아 짧게 교전하세요."
+                  : "생존 인원 우위와 레벨·특성 열세가 아닌 상황이라 함께 합류할 여지가 있습니다.");
             }
-            return set("시야와 합류 인원을 확인하세요", "교전 조건이 확실하지 않습니다. 팀이 모이기 전 단독 진입은 피하세요.", "인원·레벨·궁극기 우위가 확인되지 않았습니다.");
+            return set("시야와 합류 인원을 확인하세요", isEarlyGame
+              ? "초반에는 오브젝트 합류로 놓칠 라인 경험치도 고려하세요. 교전 조건이 불확실하므로 팀이 모이기 전 진입은 피하세요."
+              : isLateGame
+                ? "후반 오브젝트의 중요도는 높지만, 현재 전투 우위는 확인되지 않았습니다. 시야와 합류를 확인한 뒤 함께 판단하세요."
+                : "교전 조건이 확실하지 않습니다. 팀이 모이기 전 단독 진입은 피하세요.", "인원·레벨·궁극기 우위가 확인되지 않았습니다.");
           }
           if (state.objective === "ours") {
             return set("오브젝트를 안전하게 마무리하세요", "우리 팀이 진행 중입니다. 상대의 진입 경로를 살피며 흩어지지 마세요.");
           }
           if (state.objective === "soon") {
-            return set("팀을 모으고 오브젝트 주변을 확인하세요", "오브젝트가 곧 생성됩니다. 미리 합류하면 단독으로 늦게 진입하는 위험을 줄일 수 있습니다.");
+            return set("팀을 모으고 오브젝트 주변을 확인하세요", isEarlyGame
+              ? "오브젝트 생성 전 합류 위치를 확인하되, 초반 라인 경험치를 오래 비우지 않도록 팀 이동 타이밍을 맞추세요."
+              : isLateGame
+                ? "후반 오브젝트 전에 전원을 모으고 진입 경로를 정리하세요. 한 명의 이탈이 목표 확보에 큰 공백을 만들 수 있습니다."
+                : "오브젝트가 곧 생성됩니다. 미리 합류하면 단독으로 늦게 진입하는 위험을 줄일 수 있습니다.");
           }
           if (oursAlive >= enemyAlive + 2) {
             return set("가까운 목표를 함께 압박하세요", "생존 인원 우위가 있습니다. 흩어지지 말고 가까운 라인이나 구조물을 압박하세요.");
           }
-          if (state.level === "ahead" && oursAlive >= enemyAlive) {
+          if (isEarlyGame && state.objective === "unknown") {
+            return set("라인 경험치를 챙겨 다음 특성 구간을 준비하세요", "양 팀 모두 10레벨 특성 전인 초반입니다. 불필요한 추격보다 안전한 경험치 수급이 다음 특성 구간 합류에 도움이 됩니다.");
+          }
+          if (isLateGame && state.objective === "unknown") {
+            return set("다음 오브젝트를 대비해 팀을 모으세요", "20레벨 특성 이후의 후반 구간입니다. 한 명의 이탈이나 사망이 다음 목표에 큰 영향을 줄 수 있어 라인 정리 후 안전하게 합류하세요.", "오브젝트 생성 시점과 핵심 구조물 상태를 확인해 합류 우선순위를 조정하세요.");
+          }
+          if (levelAdvantage && oursAlive >= enemyAlive) {
             return set("팀을 모아 유리한 교전을 찾으세요", "레벨 우위와 생존 인원을 바탕으로 유리한 위치의 교전을 선택하세요.");
           }
-          if (state.level === "even" && oursAlive >= 4 && enemyAlive >= 4) {
+          if (levelsKnown && levelDifference === 0 && talentDifference === 0 && oursAlive >= 4 && enemyAlive >= 4) {
             return set("다섯 명을 모아 안전한 라인을 압박하세요", "양 팀 생존 인원이 비슷합니다. 단독 교전보다 팀 합류와 위치 확인이 우선입니다.");
           }
           if (state.objective === "secured") {
             return set("오브젝트 이득을 활용해 라인을 정리하세요", "이번 오브젝트는 확보했습니다. 다음 목표를 준비하며 불필요한 추격을 삼가세요.");
           }
-          if (missingHeroes || state.level === "unknown" || state.objective === "unknown") {
+          if (missingHeroes || !levelsKnown || state.objective === "unknown") {
             return {
               ...base,
               warning: missingHeroes ? "밴픽 영웅이 비어 있고 전황 일부가 미확인입니다. 실제 상황을 확인한 뒤 행동하세요." : base.warning,
-              diagnosis: missingHeroes ? "영웅 밴픽 및 전황 정보 확인 필요" : "전황 정보 추가 입력 필요"
+              diagnosis: missingHeroes ? "영웅 밴픽 및 전황 정보 확인 필요" : !levelsKnown ? "양 팀 레벨을 입력해 특성 구간을 확인하세요" : "전황 정보 추가 입력 필요"
             };
           }
           return set("팀과 함께 안전한 라인을 정리하세요", "뚜렷한 우위가 확인되지 않아 고립을 피하고 다음 오브젝트에 대비하세요.");
@@ -925,8 +1021,10 @@
           renderMapAdvice();
           const order = document.querySelector(`input[name="draft-order"][value="${state.draftOrder}"]`);
           if (order) order.checked = true;
-          document.querySelector("#level").value = state.level;
           document.querySelector("#objective").value = state.objective;
+          document.querySelector("#ours-level").value = state.oursLevel ?? "";
+          document.querySelector("#enemy-level").value = state.enemyLevel ?? "";
+          renderLevelSummary();
           document.querySelector("#prep-screen").hidden = state.phase !== "prep";
           document.querySelector("#game-screen").hidden = state.phase !== "game";
           document.querySelector("#match-summary").textContent =
@@ -978,13 +1076,28 @@
           persist();
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
-        for (const id of ["level", "objective"]) {
-          document.querySelector(`#${id}`).addEventListener("change", (event) => {
-            state[id] = event.target.value;
+        for (const [id, team] of [["ours-level", "ours"], ["enemy-level", "enemy"]]) {
+          const input = document.querySelector(`#${id}`);
+          input.addEventListener("change", () => {
+            const raw = input.value.trim();
+            const level = raw === "" ? null : Number(raw);
+            if (input.validity.badInput || (raw !== "" && (!Number.isInteger(level) || level < 1 || level > 30))) {
+              input.setCustomValidity("레벨은 1부터 30 사이의 정수로 입력해 주세요.");
+              input.reportValidity();
+              return;
+            }
+            input.setCustomValidity("");
+            state[`${team}Level`] = level;
+            renderLevelSummary();
             updateRecommendation();
             persist();
           });
         }
+        document.querySelector("#objective").addEventListener("change", (event) => {
+          state.objective = event.target.value;
+          updateRecommendation();
+          persist();
+        });
         document.querySelector("#reset").addEventListener("click", () => {
           if (!window.confirm("밴픽과 전황 입력을 모두 초기화할까요?")) return;
           state = defaultState();
