@@ -66,7 +66,7 @@
         background: #111824;
         color: var(--text);
       }
-      .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .setup-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
       .choice-row { display: flex; min-height: 42px; align-items: center; gap: 14px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; }
       .choice-row label, .objective-options label { display: inline-flex; align-items: center; gap: 7px; font-size: .88rem; }
       .draft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -121,11 +121,12 @@
       .primary-button:hover { background: #81ccff; }
       .secondary-button { border-color: var(--line); background: transparent; color: var(--text); }
       .secondary-button:hover { border-color: var(--blue); }
-      .battle-layout { display: grid; grid-template-columns: minmax(0, 1fr) 350px; align-items: start; gap: 18px; }
-      .quick-dashboard { grid-column: 1 / -1; }
+      .battle-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); align-items: start; gap: 18px; }
+      .side-column { grid-column: 2; grid-row: 1 / span 2; display: grid; align-content: start; gap: 18px; position: sticky; top: 16px; }
+      .quick-dashboard { grid-column: 1; grid-row: 1; }
+      .main-column { grid-column: 1; grid-row: 2; }
       .quick-dashboard-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
       .quick-dashboard-header h2 { margin: 0; font-size: 1.25rem; }
-      .quick-mode-badge { padding: 6px 11px; border-radius: 999px; background: #224c3a; color: #a5f0c7; font-size: .8rem; font-weight: 800; }
       .quick-clock-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
       .quick-clock-item:last-child { text-align: right; }
       .quick-clock-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: .82rem; }
@@ -147,6 +148,12 @@
       .quick-choice[aria-pressed="true"] { border-color: var(--blue); background: #1e3a52; color: #a7dcff; }
       .quick-icon { font-size: 1.35rem; line-height: 1; }
       .quick-back { min-height: 36px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); }
+      .quick-death-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
+      .quick-death-team { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: #111824; }
+      .quick-death-team > span { font-size: .82rem; font-weight: 750; }
+      .quick-death-team > div { display: flex; align-items: center; gap: 7px; }
+      .quick-death-team button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: #202838; color: var(--text); font-weight: 800; }
+      .quick-death-team output { min-width: 24px; color: var(--gold); font-weight: 850; text-align: center; }
       .full-controls { margin: 0; padding: 0; border: 0; }
       .full-controls > summary { min-height: 42px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
       .full-controls[open] > summary { margin-bottom: 12px; }
@@ -241,6 +248,7 @@
       .coach-diagnosis { margin: 0 0 9px; color: #aab8cc; font-size: .78rem; font-weight: 700; }
       .recommendation-more { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 9px; }
       .recommendation-more > summary { min-height: 36px; }
+      .recommendation-reason { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
       .survival-summary { display: grid; gap: 6px; margin: 0 0 14px; }
       .survival-team { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; font-size: .82rem; }
       .survival-team strong { font-weight: 800; }
@@ -280,10 +288,21 @@
       [hidden] { display: none !important; }
       @media (max-width: 850px) {
         .battle-layout { grid-template-columns: minmax(0, 1fr); }
-        .recommendation { position: static; }
-        .side-column { order: 1; }
-        .main-column { order: 2; }
-        .quick-dashboard { order: 0; }
+        .side-column { display: contents; }
+        .recommendation { grid-column: 1; grid-row: 1; position: sticky; top: 8px; z-index: 10; max-height: min(46vh, 360px); overflow-y: auto; }
+        .quick-dashboard { grid-column: 1; grid-row: 2; }
+        .main-column { grid-column: 1; grid-row: 3; }
+        .side-column > .card:not(.recommendation) { grid-column: 1; grid-row: 4; }
+      }
+      @media (max-width: 600px) {
+        .card.recommendation { padding: 11px 13px; }
+        .recommendation .card-heading { margin-bottom: 6px; }
+        .recommendation .reason { margin-top: 7px; }
+        .recommendation .reason p { margin-top: 3px; }
+        .recommendation .reason .action { font-size: 1.2rem; }
+        .recommendation .warning { margin-top: 7px; padding: 6px 8px; }
+        .quick-death-team { padding: 6px; }
+        .quick-death-team button { width: 32px; height: 32px; }
       }
       @media (max-width: 600px) {
         .shell { width: min(100% - 20px, 520px); padding-top: 18px; }
@@ -365,13 +384,6 @@
                 <option>하나무라 사원</option><option>블랙하트 항만</option>
               </select>
             </div>
-            <fieldset style="padding:0;border:0;margin:0">
-              <legend class="field-label">우리 팀 밴픽 순서</legend>
-              <div class="choice-row">
-                <label><input type="radio" name="draft-order" value="first"> 선픽</label>
-                <label><input type="radio" name="draft-order" value="second"> 후픽</label>
-              </div>
-            </fieldset>
           </div>
           <section id="map-advice" class="map-advice" aria-labelledby="map-advice-heading" aria-live="polite" hidden>
             <div class="map-advice-heading">
@@ -406,16 +418,65 @@
           <p id="draft-status" class="draft-status" role="status" aria-live="polite"></p>
           <div class="draft-actions">
             <button id="random-draft" class="secondary-button" type="button">테스트용 랜덤 밴픽 생성</button>
-            <button id="start-match" class="primary-button" type="button">게임 중 전황 입력 →</button>
+            <button id="start-match" class="primary-button" type="button">새 경기 시작 →</button>
+            <button id="resume-match" class="secondary-button" type="button" hidden>저장된 경기 이어하기 →</button>
           </div>
         </section>
 
         <section id="game-screen" class="battle-layout" aria-label="게임 중 전황 입력" hidden>
+          <aside class="side-column">
+            <section class="card recommendation" aria-labelledby="recommend-heading">
+              <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
+              <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
+              <div class="reason">
+                <strong>최우선 행동</strong>
+                <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
+              </div>
+              <div class="reason">
+                <strong>판단 근거</strong>
+                <p id="reason" class="recommendation-reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
+              </div>
+              <details class="recommendation-more">
+                <summary>주의 사항 · 전황 요약 · 실행 세부 정보</summary>
+                <div class="warning">
+                  <strong>주의 사항</strong>
+                  <p id="warning-text"></p>
+                </div>
+                <div class="coach-status" aria-label="추천 분류">
+                  <span id="urgency" class="coach-badge" data-urgency="정보 부족">정보 부족</span>
+                  <span id="recommendation-category" class="coach-badge">운영</span>
+                  <span id="evidence-level" class="coach-badge">근거 제한</span>
+                </div>
+                <p id="diagnosis" class="coach-diagnosis"></p>
+                <div id="survival-summary" class="survival-summary" aria-live="polite"></div>
+                <div class="reason">
+                  <strong>실행 조건</strong>
+                  <p id="execution-condition"></p>
+                </div>
+                <div class="reason">
+                  <strong>대안</strong>
+                  <p id="alternative"></p>
+                </div>
+                <div class="reason">
+                  <strong>예상 이득 · 위험</strong>
+                  <p id="expected-outcome"></p>
+                </div>
+                <details>
+                  <summary>상세 분석 보기</summary>
+                  <ul id="analysis" class="analysis"></ul>
+                </details>
+                <p class="coach-limit">궁극기 참고는 일부 영웅의 교전 영향 잠재력에 대한 추정입니다. 선택한 궁극기와 실제 재사용 대기시간은 확인하지 않습니다.</p>
+              </details>
+            </section>
+            <section class="card">
+              <h2>사용 안내</h2>
+              <p class="footnote" style="margin-top:9px">추천은 생존·레벨·부활·오브젝트·궁극기 입력을 활용하는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
+            </section>
+          </aside>
           <section class="quick-dashboard card" aria-labelledby="battle-heading">
             <div class="quick-dashboard-header">
               <h2 id="battle-heading">게임 중 전황</h2>
-              <span class="quick-mode-badge">간편 모드</span>
-              <button id="back-to-prep" class="quick-back" type="button">밴픽 수정</button>
+              <button id="back-to-prep" class="quick-back" type="button">준비 화면으로</button>
             </div>
             <div class="quick-clock-row">
               <div class="quick-clock-item">
@@ -436,12 +497,6 @@
             </div>
             <h3 class="quick-section-title">지금 상황을 선택해</h3>
             <div class="quick-choice-grid" aria-label="빠른 상황 입력">
-              <button class="quick-choice" type="button" data-quick-action="fight-won" aria-pressed="false">
-                <span class="quick-icon" aria-hidden="true">⚔</span><span>한타 승리</span>
-              </button>
-              <button class="quick-choice" type="button" data-quick-action="fight-lost" aria-pressed="false">
-                <span class="quick-icon" aria-hidden="true">⛨</span><span>한타 패배</span>
-              </button>
               <button class="quick-choice" type="button" data-quick-action="objective-contested" aria-pressed="false">
                 <span class="quick-icon" aria-hidden="true">◎</span><span>오브젝트 경합</span>
               </button>
@@ -449,6 +504,25 @@
                 <span class="quick-icon" aria-hidden="true">☠</span><span>아군 사망</span>
               </button>
             </div>
+            <div id="quick-death-counts" class="quick-death-counts" aria-label="양 팀 전체 사망 수">
+              <div class="quick-death-team">
+                <span>아군 사망</span>
+                <div>
+                  <button type="button" data-death-team="ours" data-step="-1" aria-label="아군 사망 수 감소">−</button>
+                  <output data-death-count="ours">미확인</output>
+                  <button type="button" data-death-team="ours" data-step="1" aria-label="아군 사망 수 증가">+</button>
+                </div>
+              </div>
+              <div class="quick-death-team">
+                <span>상대 사망</span>
+                <div>
+                  <button type="button" data-death-team="enemy" data-step="-1" aria-label="상대 사망 수 감소">−</button>
+                  <output data-death-count="enemy">미확인</output>
+                  <button type="button" data-death-team="enemy" data-step="1" aria-label="상대 사망 수 증가">+</button>
+                </div>
+              </div>
+            </div>
+            <p class="hint">팀 전체 사망 수를 입력합니다. 영웅별 사망 입력과 중복되면 더 큰 확인 수를 반영합니다.</p>
           </section>
           <div class="main-column">
             <details id="detailed-inputs" class="full-controls">
@@ -582,55 +656,6 @@
               </section>
             </details>
           </div>
-          <aside class="side-column">
-            <section class="card recommendation" aria-labelledby="recommend-heading">
-              <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
-              <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
-              <div class="reason">
-                <strong>최우선 행동</strong>
-                <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
-              </div>
-              <div class="reason">
-                <strong>판단 근거</strong>
-                <p id="reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
-              </div>
-              <div class="warning">
-                <strong>주의 사항</strong>
-                <p id="warning-text"></p>
-              </div>
-              <details class="recommendation-more">
-                <summary>전황 요약 및 실행 세부 정보</summary>
-                <div class="coach-status" aria-label="추천 분류">
-                  <span id="urgency" class="coach-badge" data-urgency="정보 부족">정보 부족</span>
-                  <span id="recommendation-category" class="coach-badge">운영</span>
-                  <span id="evidence-level" class="coach-badge">근거 제한</span>
-                </div>
-                <p id="diagnosis" class="coach-diagnosis"></p>
-                <div id="survival-summary" class="survival-summary" aria-live="polite"></div>
-                <div class="reason">
-                  <strong>실행 조건</strong>
-                  <p id="execution-condition"></p>
-                </div>
-                <div class="reason">
-                  <strong>대안</strong>
-                  <p id="alternative"></p>
-                </div>
-                <div class="reason">
-                  <strong>예상 이득 · 위험</strong>
-                  <p id="expected-outcome"></p>
-                </div>
-                <details>
-                  <summary>상세 분석 보기</summary>
-                  <ul id="analysis" class="analysis"></ul>
-                </details>
-                <p class="coach-limit">궁극기 참고는 일부 영웅의 교전 영향 잠재력에 대한 추정입니다. 선택한 궁극기와 실제 재사용 대기시간은 확인하지 않습니다.</p>
-              </details>
-            </section>
-            <section class="card">
-              <h2>사용 안내</h2>
-              <p class="footnote" style="margin-top:9px">추천은 생존·레벨·부활·오브젝트·궁극기 입력을 활용하는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
-            </section>
-          </aside>
         </section>
       </main>
       </div>
@@ -877,6 +902,7 @@
           battle: Object.fromEntries(["ours", "enemy"].map((team) => [
             team, Array.from({ length: 5 }, () => ({ hero: "", alive: true, respawn: null, ultimate: "unknown" }))
           ])),
+          reportedDeaths: { ours: null, enemy: null }, matchInitialized: false,
           oursLevel: null, enemyLevel: null, objective: "unknown", objectiveSeconds: null,
           campStatus: "unknown", laneTrade: "unknown", fightResult: "unknown",
           gameClockSeconds: 0, gameClockStartedAt: null, gameStatus: "waiting",
@@ -921,11 +947,16 @@
             if (Array.isArray(value.battle?.[team])) {
               fresh.battle[team] = Array.from({ length: 5 }, (_, i) => {
                 const member = value.battle[team][i];
+                const respawn = Number.isInteger(member?.respawn)
+                  ? !hasTimingData && member.respawn === 0 ? null : Math.min(180, Math.max(0, member.respawn))
+                  : null;
                 return {
                   hero: heroList.includes(member?.hero) ? member.hero : "",
-                  alive: member?.alive !== false,
-                  respawn: Number.isInteger(member?.respawn)
-                    ? !hasTimingData && member.respawn === 0 ? null : Math.min(180, Math.max(0, member.respawn))
+                  alive: member?.alive !== false || respawn === 0,
+                  respawn: respawn === 0 ? null : respawn,
+                  respawnStartedAt: Number.isSafeInteger(member?.respawnStartedAt)
+                    && member.respawnStartedAt > 0 && member.respawnStartedAt <= Date.now()
+                    ? member.respawnStartedAt
                     : null,
                   ultimate: ["unknown", "ready", "used"].includes(member?.ultimate) ? member.ultimate : "unknown"
                 };
@@ -967,6 +998,17 @@
             });
           }
           fresh.mapStrategy = HotsMapStrategies.normalizeState(value.mapStrategy);
+          fresh.reportedDeaths = Object.fromEntries(["ours", "enemy"].map((team) => [
+            team,
+            Number.isInteger(value.reportedDeaths?.[team])
+              ? Math.max(0, Math.min(5, value.reportedDeaths[team]))
+              : null
+          ]));
+          fresh.matchInitialized = typeof value.matchInitialized === "boolean"
+            ? value.matchInitialized
+            : fresh.phase === "game" || fresh.gameStatus !== "waiting" || fresh.gameClockSeconds > 0
+              || fresh.objective !== "unknown" || fresh.objectiveEventStatus !== "waiting"
+              || fresh.oursLevel !== null || fresh.enemyLevel !== null || fresh.fightResult !== "unknown";
           if (!hasObjectiveTimerState && Number.isInteger(fresh.objectiveSeconds)) {
             fresh.nextObjectiveAtOverride = fresh.gameClockSeconds + fresh.objectiveSeconds;
           }
@@ -1006,6 +1048,37 @@
             ? Math.floor((Date.now() - state.gameClockStartedAt) / 1000)
             : 0;
           return Math.max(0, Math.min(86400, state.gameClockSeconds + elapsed));
+        }
+
+        function respawnSecondsRemaining(member) {
+          if (!Number.isInteger(member.respawn)) return null;
+          if (!Number.isSafeInteger(member.respawnStartedAt)) return member.respawn;
+          const elapsed = Math.floor((Date.now() - member.respawnStartedAt) / 1000);
+          return Math.max(0, member.respawn - elapsed);
+        }
+
+        function updateRespawnCountdowns() {
+          let revived = false;
+          for (const team of ["ours", "enemy"]) {
+            for (let index = 0; index < state.battle[team].length; index += 1) {
+              const member = state.battle[team][index];
+              if (member.alive || !Number.isSafeInteger(member.respawnStartedAt)) continue;
+              const remaining = respawnSecondsRemaining(member);
+              if (remaining === 0) {
+                member.alive = true;
+                member.respawn = null;
+                member.respawnStartedAt = null;
+                revived = true;
+                continue;
+              }
+              const input = document.querySelector(`#battle-rosters [data-field="respawn"][data-team="${team}"][data-index="${index}"]`);
+              if (input && document.activeElement !== input) input.value = String(remaining);
+            }
+          }
+          if (revived) {
+            renderRosters();
+            persist();
+          }
         }
 
         function formatGameTime(seconds) {
@@ -1295,8 +1368,7 @@
           const total = Object.values(slots).reduce((sum, group) => sum + group.count, 0);
           const chosen = Object.values(state.draft).flat().filter(Boolean).length;
           const mapText = state.map || "전장 미선택";
-          const orderText = state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "순서 미선택";
-          return `${mapText} · ${orderText} · 밴픽 ${chosen}/${total} 선택`;
+          return `${mapText} · 밴픽 ${chosen}/${total} 선택`;
         }
 
         function renderMapAdvice() {
@@ -1432,9 +1504,35 @@
         function teamSurvival(team) {
           const members = state.battle[team];
           const identified = members.map((member, index) => Boolean(pickedHero(team, index) || member.hero));
+          const knownDead = members.filter((member) => !member.alive).length;
+          const reported = state.reportedDeaths[team];
+          if (reported !== null) {
+            const totalDead = Math.max(knownDead, reported);
+            const alive = 5 - totalDead;
+            return {
+              confirmedAlive: alive,
+              possibleAlive: alive,
+              unknownHeroes: 0,
+              reportedUnknownDeaths: totalDead - knownDead,
+              knownDead
+            };
+          }
           const confirmedAlive = members.filter((member, index) => identified[index] && member.alive).length;
-          const unknownHeroes = identified.filter((isIdentified) => !isIdentified).length;
-          return { confirmedAlive, possibleAlive: confirmedAlive + unknownHeroes, unknownHeroes };
+          const unknownHeroes = members.filter((member, index) => !identified[index] && member.alive).length;
+          return {
+            confirmedAlive,
+            possibleAlive: confirmedAlive + unknownHeroes,
+            unknownHeroes,
+            reportedUnknownDeaths: 0,
+            knownDead
+          };
+        }
+
+        function teamDeadCount(team) {
+          return Math.max(
+            state.battle[team].filter((member) => !member.alive).length,
+            state.reportedDeaths[team] ?? 0
+          );
         }
 
         const talentLevels = [1, 4, 7, 10, 13, 16, 20];
@@ -1499,7 +1597,7 @@
                     <button class="life-button" type="button" data-team="${team}" data-index="${index}" data-field="alive" data-value="alive" aria-pressed="${member.alive}">생존</button>
                     <button class="life-button" type="button" data-team="${team}" data-index="${index}" data-field="alive" data-value="dead" aria-pressed="${dead}">사망</button>
                   </div>
-                  ${dead ? `<label class="respawn-control">부활까지 남은 시간 (초)<input type="number" min="0" max="180" step="1" inputmode="numeric" placeholder="미확인" value="${member.respawn ?? ""}" data-team="${team}" data-index="${index}" data-field="respawn" aria-label="${title} ${hero || `${index + 1}번`} 부활까지 남은 시간 (초)"></label>` : ""}
+                  ${dead ? `<label class="respawn-control">부활까지 남은 시간 (초)<input type="number" min="0" max="180" step="1" inputmode="numeric" placeholder="미확인" value="${respawnSecondsRemaining(member) ?? ""}" data-team="${team}" data-index="${index}" data-field="respawn" aria-label="${title} ${hero || `${index + 1}번`} 부활까지 남은 시간 (초)"></label>` : ""}
                   <select data-team="${team}" data-index="${index}" data-field="ultimate" aria-label="${title} ${hero || `${index + 1}번`} 주요 궁극기">
                     <option value="unknown"${member.ultimate === "unknown" ? " selected" : ""}>궁 미확인</option>
                     <option value="ready"${member.ultimate === "ready" ? " selected" : ""}>궁 가능</option>
@@ -1523,7 +1621,18 @@
                   return;
                 }
                 control.setCustomValidity("");
-                state.battle[control.dataset.team][Number(control.dataset.index)].respawn = respawn;
+                const member = state.battle[control.dataset.team][Number(control.dataset.index)];
+                const changed = member.respawn !== respawn;
+                member.respawn = respawn;
+                if (Number.isInteger(respawn) && respawn > 0) {
+                  if (changed || !Number.isSafeInteger(member.respawnStartedAt)) member.respawnStartedAt = Date.now();
+                } else {
+                  member.respawnStartedAt = null;
+                }
+                if (respawn === 0) {
+                  member.alive = true;
+                  renderRosters();
+                }
                 updateRecommendation();
                 persist();
               };
@@ -1537,7 +1646,12 @@
               const field = control.dataset.field;
               if (field === "alive") {
                 state.battle[team][index].alive = control.dataset.value === "alive";
-                if (state.battle[team][index].alive) state.battle[team][index].respawn = null;
+                if (state.battle[team][index].alive) {
+                  state.battle[team][index].respawn = null;
+                  state.battle[team][index].respawnStartedAt = null;
+                } else {
+                  state.battle[team][index].respawnStartedAt = null;
+                }
               }
               if (field === "ultimate") state.battle[team][index].ultimate = control.value;
               renderRosters();
@@ -1596,12 +1710,11 @@
             if (!rallyTimingKnown) return null;
             const members = state.battle[team];
             const survival = teamSurvival(team);
-            const knownDead = members.filter((member, index) =>
-              (pickedHero(team, index) || member.hero) && !member.alive
-            );
-            const definitelyRevived = knownDead.filter((member) => Number.isInteger(member.respawn) && member.respawn <= objectiveSeconds).length;
-            const possiblyRevived = knownDead.filter((member) => Number.isInteger(member.respawn) && member.respawn <= timer.maxRemaining).length;
-            const unknownDead = knownDead.filter((member) => !Number.isInteger(member.respawn)).length;
+            const knownDead = members.filter((member) => !member.alive);
+            const definitelyRevived = knownDead.filter((member) => Number.isInteger(respawnSecondsRemaining(member)) && respawnSecondsRemaining(member) <= objectiveSeconds).length;
+            const possiblyRevived = knownDead.filter((member) => Number.isInteger(respawnSecondsRemaining(member)) && respawnSecondsRemaining(member) <= timer.maxRemaining).length;
+            const unknownDead = knownDead.filter((member) => !Number.isInteger(respawnSecondsRemaining(member))).length
+              + survival.reportedUnknownDeaths;
             const confirmed = survival.confirmedAlive + definitelyRevived;
             return {
               confirmed,
@@ -1614,12 +1727,8 @@
           const enemyRally = availability("enemy");
           const confirmedRallyAdvantage = oursRally && enemyRally && oursRally.confirmed > enemyRally.maximum;
           const largeRallyDisadvantage = oursRally && enemyRally && oursRally.maximum <= enemyRally.confirmed - 2;
-          const oursDead = ours.filter((member, index) =>
-            (pickedHero("ours", index) || member.hero) && !member.alive
-          ).length;
-          const enemyDead = enemy.filter((member, index) =>
-            (pickedHero("enemy", index) || member.hero) && !member.alive
-          ).length;
+          const oursDead = teamDeadCount("ours");
+          const enemyDead = teamDeadCount("enemy");
           const killAdvantage = !["lost", "even"].includes(state.fightResult) && enemyDead > oursDead && enemyDead > 0;
           const inferredFightResult = state.fightResult !== "unknown"
             ? state.fightResult
@@ -1639,7 +1748,7 @@
             const hero = pickedHero(team, index) || member.hero;
             if (!hero) return summary;
             const impact = ultimateImpact[hero];
-            const canAttend = member.alive || (rallyTimingKnown && Number.isInteger(member.respawn) && member.respawn <= objectiveSeconds);
+            const canAttend = member.alive || (rallyTimingKnown && Number.isInteger(respawnSecondsRemaining(member)) && respawnSecondsRemaining(member) <= objectiveSeconds);
             if (!impact) summary.unrated += 1;
             if (member.ultimate === "unknown") summary.unknown += 1;
             if (member.ultimate === "ready" && impact && canAttend) summary.readyImpact += impact;
@@ -2040,6 +2149,11 @@
             count.textContent = `${aliveText}${rallyText}`;
             row.append(teamLabel, count);
             survivalSummary.append(row);
+            const deathCount = state.battle[team].filter((member) => !member.alive).length;
+            document.querySelector(`[data-death-count="${team}"]`).textContent =
+              state.reportedDeaths[team] === null
+                ? deathCount ? `${deathCount}+?` : "?"
+                : String(Math.max(state.reportedDeaths[team], deathCount));
           }
           const urgency = document.querySelector("#urgency");
           urgency.textContent = recommendation.urgency;
@@ -2063,8 +2177,6 @@
             (pickedHero("ours", index) || member.hero) && !member.alive
           );
           const selected = {
-            "fight-won": state.fightResult === "won",
-            "fight-lost": state.fightResult === "lost",
             "objective-contested": state.objectiveEventStatus === "active",
             "ally-dead": hasKnownAllyDeath
           };
@@ -2086,8 +2198,6 @@
           updateMapBackground();
           document.querySelector("#map").value = state.map;
           renderMapAdvice();
-          const order = document.querySelector(`input[name="draft-order"][value="${state.draftOrder}"]`);
-          if (order) order.checked = true;
           document.querySelector("#objective").value = state.objective;
           renderObjectiveTimer();
           renderMapStrategy();
@@ -2099,8 +2209,9 @@
           renderLevelSummary();
           document.querySelector("#prep-screen").hidden = state.phase !== "prep";
           document.querySelector("#game-screen").hidden = state.phase !== "game";
+          document.querySelector("#resume-match").hidden = !state.matchInitialized;
           document.querySelector("#match-summary").textContent =
-            `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "밴픽 순서 미선택"}`;
+            `${state.map || "전장 미선택"}`;
           renderDraft();
           renderRosters();
           updateRecommendation();
@@ -2129,16 +2240,9 @@
           updateRecommendation();
           document.querySelector("#draft-status").textContent = draftProgress();
           document.querySelector("#match-summary").textContent =
-            `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : state.draftOrder === "second" ? "후픽" : "밴픽 순서 미선택"}`;
+            `${state.map || "전장 미선택"}`;
           persist();
         });
-        document.querySelectorAll('input[name="draft-order"]').forEach((radio) => radio.addEventListener("change", () => {
-          state.draftOrder = radio.value;
-          document.querySelector("#draft-status").textContent = draftProgress();
-          document.querySelector("#match-summary").textContent =
-            `${state.map || "전장 미선택"} · ${state.draftOrder === "first" ? "선픽" : "후픽"}`;
-          persist();
-        }));
         const mapStrategyControls = document.querySelector("#map-strategy-controls");
         mapStrategyControls.addEventListener("change", (event) => {
           const field = event.target.dataset.mapField;
@@ -2199,11 +2303,20 @@
         document.querySelector("#close-hero-dialog").addEventListener("click", () => heroDialog.close());
         heroDialog.addEventListener("close", () => { activeSlot = null; });
         document.querySelector("#start-match").addEventListener("click", () => {
+          if (state.matchInitialized && !window.confirm("저장된 경기 전황을 초기화하고 새 경기를 시작할까요? 전장과 밴픽은 유지됩니다.")) return;
           state.phase = "game";
           state.mapStrategy = HotsMapStrategies.createDefaultState();
+          state.battle = defaultState().battle;
+          state.reportedDeaths = { ours: null, enemy: null };
+          state.oursLevel = null;
+          state.enemyLevel = null;
+          state.campStatus = "unknown";
+          state.laneTrade = "unknown";
+          state.fightResult = "unknown";
           state.gameClockSeconds = 0;
           state.gameClockStartedAt = null;
           state.gameStatus = "waiting";
+          state.matchInitialized = true;
           state.objective = mapObjectiveRules[state.map]?.first?.startsAt ? "soon" : "unknown";
           state.objectiveSeconds = null;
           state.objectiveEventStatus = "waiting";
@@ -2213,6 +2326,13 @@
           state.objectiveEndKind = "normal";
           state.nextObjectiveAtOverride = null;
           state.objectiveHistory = [];
+          render();
+          persist();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        document.querySelector("#resume-match").addEventListener("click", () => {
+          if (!state.matchInitialized) return;
+          state.phase = "game";
           render();
           persist();
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2272,13 +2392,6 @@
         document.querySelector(".quick-choice-grid").addEventListener("click", (event) => {
           const button = event.target.closest("[data-quick-action]");
           if (!button) return;
-          if (button.dataset.quickAction === "fight-won" || button.dataset.quickAction === "fight-lost") {
-            state.fightResult = button.dataset.quickAction === "fight-won" ? "won" : "lost";
-            document.querySelector("#fight-result").value = state.fightResult;
-            updateRecommendation();
-            persist();
-            return;
-          }
           if (button.dataset.quickAction === "objective-contested") {
             if (state.objectiveEventStatus !== "active") startObjectiveEvent();
             document.querySelector("#objective").value = state.objective;
@@ -2295,6 +2408,17 @@
             roster.scrollIntoView({ behavior: "smooth", block: "start" });
             roster.querySelector(".hero-row .life-button[data-team='ours'][data-value='dead']")?.focus();
           }
+        });
+        document.querySelector("#quick-death-counts").addEventListener("click", (event) => {
+          const button = event.target.closest("[data-death-team]");
+          if (!button) return;
+          const team = button.dataset.deathTeam;
+          state.reportedDeaths[team] = Math.max(
+            0,
+            Math.min(5, (state.reportedDeaths[team] ?? 0) + Number(button.dataset.step))
+          );
+          updateRecommendation();
+          persist();
         });
         const refreshTimer = () => {
           renderObjectiveTimer();
@@ -2418,6 +2542,7 @@
           persist();
         });
         window.setInterval(() => {
+          updateRespawnCountdowns();
           renderObjectiveTimer();
           updateRecommendation();
         }, 1000);

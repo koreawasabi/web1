@@ -26,6 +26,11 @@ const unfavorable = {
 };
 
 function loadCoachHarness() {
+  let now = Date.now();
+  const intervals = [];
+  class TestDate extends Date {
+    static now() { return now; }
+  }
   class Element {
     constructor() {
       Object.assign(this, {
@@ -62,7 +67,7 @@ function loadCoachHarness() {
   let confirmResult = true;
   let confirmCalls = 0;
   const window = {
-    setInterval() {},
+    setInterval(callback) { intervals.push(callback); },
     confirm() { confirmCalls += 1; return confirmResult; },
     scrollTo() {}
   };
@@ -72,7 +77,7 @@ function loadCoachHarness() {
     window,
     localStorage: storage,
     console,
-    Date
+    Date: TestDate
   };
   const root = path.join(__dirname, "..");
   vm.createContext(context);
@@ -80,7 +85,7 @@ function loadCoachHarness() {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   assert.ok(inlineScript, "page has an inline application script");
-  const hook = `window.__coachTest = { defaultState, setState: (next) => { state = next; }, makeRecommendation, normalizeState, renderObjectiveTimer };
+  const hook = `window.__coachTest = { defaultState, getState: () => state, setState: (next) => { state = next; }, makeRecommendation, normalizeState, renderObjectiveTimer, respawnSecondsRemaining, updateRespawnCountdowns, teamSurvival };
         loadState();`;
   const instrumented = inlineScript.replace("        loadState();", hook);
   assert.notEqual(instrumented, inlineScript, "test hook insertion point exists");
@@ -89,6 +94,9 @@ function loadCoachHarness() {
     coach: window.__coachTest,
     querySelector,
     storage,
+    now: () => now,
+    setTime(value) { now = value; },
+    runIntervals() { for (const callback of intervals) callback(); },
     setConfirmResult(value) { confirmResult = value; },
     getConfirmCalls() { return confirmCalls; }
   };
@@ -281,6 +289,8 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   assert.equal(ids.length, new Set(ids).size, "HTML ids remain unique");
   const mapOptions = html.match(/<select id="map">([\s\S]*?)<\/select>/)?.[1].match(/<option(?![^>]*value="")[^>]*>/g);
   assert.equal(mapOptions?.length, 14, "all 14 battleground choices remain available");
+  const prepScreen = html.match(/<section id="prep-screen"[\s\S]*?<\/section>\s*<section id="game-screen"/)?.[0];
+  assert.doesNotMatch(prepScreen, /name="draft-order"|밴픽 순서|선픽|후픽/);
 
   const advancedTimer = html.match(/<details class="advanced-controls">([\s\S]*?)<\/details>/)?.[1];
   assert.ok(advancedTimer, "timer correction controls are in an advanced disclosure");
@@ -295,19 +305,130 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   assert.match(heroInputs, /id="battle-rosters"/);
   const recommendationDetails = html.match(/<details class="recommendation-more">([\s\S]*?)<\/details>/)?.[1];
   assert.ok(html.indexOf('<p id="recommendation"') < html.indexOf('<details class="recommendation-more">'));
+  assert.match(html, /<p id="reason" class="recommendation-reason">/);
+  assert.ok(recommendationDetails.indexOf('id="warning-text"') >= 0, "warnings remain available in recommendation details");
   assert.match(recommendationDetails, /id="execution-condition"/);
   assert.match(recommendationDetails, /id="alternative"/);
   assert.ok(html.indexOf('id="fight-result"') < html.indexOf('class="objective-timer"'));
   const quickDashboard = html.match(/<section class="quick-dashboard card"([\s\S]*?)<\/section>/)?.[1];
+  assert.match(html, /\.battle-layout \{ display: grid; grid-template-columns: minmax\(0, 1fr\) minmax\(300px, 360px\);/);
+  assert.match(html, /\.side-column \{ grid-column: 2; grid-row: 1 \/ span 2;[^}]*position: sticky;/);
+  assert.match(html, /@media \(max-width: 850px\) \{\s*\.battle-layout \{ grid-template-columns: minmax\(0, 1fr\); \}\s*\.side-column \{ display: contents; \}\s*\.recommendation \{ grid-column: 1; grid-row: 1; position: sticky;/);
+  assert.match(html, /\.quick-dashboard \{ grid-column: 1; grid-row: 2; \}/);
+  assert.match(html, /\.main-column \{ grid-column: 1; grid-row: 3; \}/);
   assert.match(quickDashboard, /id="game-clock"/);
   assert.match(quickDashboard, /id="quick-objective-countdown"/);
   assert.match(quickDashboard, /id="game-start"[^>]*>게임 시작/);
   assert.match(quickDashboard, /id="game-end"[^>]*disabled>게임 종료/);
   assert.match(quickDashboard, /id="match-status"/);
-  for (const action of ["fight-won", "fight-lost", "objective-contested", "ally-dead"]) {
+  assert.match(quickDashboard, /id="quick-death-counts"/);
+  assert.match(quickDashboard, /data-death-team="ours"/);
+  assert.match(quickDashboard, /data-death-team="enemy"/);
+  assert.match(html, /id="start-match"[^>]*>새 경기 시작/);
+  assert.match(html, /id="resume-match"[^>]*hidden>저장된 경기 이어하기/);
+  assert.doesNotMatch(quickDashboard, /간편 모드/);
+  assert.match(quickDashboard, /id="back-to-prep"[^>]*>준비 화면으로/);
+  for (const action of ["objective-contested", "ally-dead"]) {
     assert.match(quickDashboard, new RegExp(`data-quick-action="${action}"`));
   }
+  assert.doesNotMatch(quickDashboard, /data-quick-action="fight-(?:won|lost)"/);
   assert.match(html, /<details id="detailed-inputs" class="full-controls">/);
+});
+
+test("new match resets match data while resume restores the saved match", () => {
+  const { coach, querySelector, getConfirmCalls, setConfirmResult } = loadCoachHarness();
+  const state = coach.defaultState();
+  state.matchInitialized = true;
+  state.phase = "prep";
+  state.map = "용의 둥지";
+  state.draft.ourPicks[0] = "가로쉬";
+  state.gameClockSeconds = 245;
+  state.gameStatus = "active";
+  state.gameClockStartedAt = Date.now();
+  state.objectiveSeconds = 45;
+  state.oursLevel = 18;
+  state.fightResult = "won";
+  state.reportedDeaths.ours = 2;
+  state.battle.ours[0].alive = false;
+  coach.setState(state);
+
+  setConfirmResult(false);
+  querySelector("#start-match").listeners.click();
+  assert.equal(coach.getState().phase, "prep", "cancel keeps the saved match");
+  assert.equal(coach.getState().gameClockSeconds, 245);
+  assert.equal(getConfirmCalls(), 1);
+
+  setConfirmResult(true);
+  querySelector("#start-match").listeners.click();
+  const fresh = coach.getState();
+  assert.equal(getConfirmCalls(), 2);
+  assert.equal(fresh.phase, "game");
+  assert.equal(fresh.map, "용의 둥지");
+  assert.equal(fresh.draft.ourPicks[0], "가로쉬");
+  assert.equal(fresh.gameClockSeconds, 0);
+  assert.equal(fresh.gameStatus, "waiting");
+  assert.equal(fresh.objectiveSeconds, null);
+  assert.equal(fresh.matchInitialized, true);
+  assert.equal(fresh.oursLevel, null);
+  assert.equal(fresh.fightResult, "unknown");
+  assert.equal(fresh.reportedDeaths.ours, null);
+  assert.equal(fresh.battle.ours[0].alive, true);
+
+  fresh.phase = "prep";
+  fresh.gameClockSeconds = 370;
+  fresh.gameStatus = "active";
+  fresh.gameClockStartedAt = Date.now();
+  querySelector("#resume-match").listeners.click();
+  assert.equal(fresh.phase, "game");
+  assert.equal(fresh.gameClockSeconds, 370);
+  assert.equal(fresh.gameStatus, "active");
+});
+
+test("quick team death counts update survival and fight recommendations without roster attribution", () => {
+  const { coach, querySelector } = loadCoachHarness();
+  const state = coach.defaultState();
+  coach.setState(state);
+  const click = querySelector("#quick-death-counts").listeners.click;
+  const press = (team, step) => click({
+    target: {
+      closest: () => ({ dataset: { deathTeam: team, step: String(step) } })
+    }
+  });
+
+  press("ours", 1);
+  press("enemy", 2);
+  assert.equal(state.reportedDeaths.ours, 1);
+  assert.equal(state.reportedDeaths.enemy, 2);
+  const oursSurvival = coach.teamSurvival("ours");
+  assert.equal(oursSurvival.confirmedAlive, 4);
+  assert.equal(oursSurvival.possibleAlive, 4);
+  assert.equal(oursSurvival.unknownHeroes, 0);
+  assert.equal(oursSurvival.reportedUnknownDeaths, 1);
+  assert.match(coach.makeRecommendation().analysis.join(" "), /우리 1명 \/ 상대 2명/);
+
+  state.battle.ours[0].alive = false;
+  assert.equal(coach.teamSurvival("ours").confirmedAlive, 4, "reported and individual deaths are not double-counted");
+});
+
+test("respawn countdown revives a dead member at zero", () => {
+  const { coach, setTime, runIntervals, now } = loadCoachHarness();
+  const state = coach.defaultState();
+  const member = state.battle.ours[0];
+  member.alive = false;
+  member.respawn = 2;
+  member.respawnStartedAt = now();
+  coach.setState(state);
+
+  setTime(now() + 1000);
+  runIntervals();
+  assert.equal(coach.respawnSecondsRemaining(member), 1);
+  assert.equal(member.alive, false);
+
+  setTime(now() + 1000);
+  runIntervals();
+  assert.equal(member.alive, true);
+  assert.equal(member.respawn, null);
+  assert.equal(member.respawnStartedAt, null);
 });
 
 test("quick objective controls preserve start, secure, correction, and undo behavior", () => {
@@ -337,7 +458,7 @@ test("quick objective controls preserve start, secure, correction, and undo beha
   assert.equal(state.objective, "contested");
 });
 
-test("quick situation cards update the same recommendation state and reveal ally details", () => {
+test("quick objective card updates recommendation and ally death card reveals details", () => {
   const { coach, querySelector } = loadCoachHarness();
   const state = coach.defaultState();
   state.map = "저주받은 골짜기";
@@ -355,12 +476,6 @@ test("quick situation cards update the same recommendation state and reveal ally
     };
     click({ target: button });
   };
-  clickAction("fight-won");
-  assert.equal(state.fightResult, "won");
-  assert.equal(querySelector("#fight-result").value, "won");
-  clickAction("fight-lost");
-  assert.equal(state.fightResult, "lost");
-
   clickAction("objective-contested");
   assert.equal(state.objectiveEventStatus, "active");
   assert.equal(state.objective, "contested");
