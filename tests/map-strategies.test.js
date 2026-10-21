@@ -124,6 +124,19 @@ test("Cursed Hollow recommends defending when the enemy is one tribute from a cu
   assert.match(recommendation.action, /저주 방어/);
 });
 
+test("a level deficit alone does not cancel a contest supported by confirmed numbers", () => {
+  const state = createDefaultState();
+  state["저주받은 골짜기"] = { oursTributes: 2, enemyTributes: 0, curseStatus: "none" };
+  const recommendation = evaluate("저주받은 골짜기", state, {
+    ...favorable,
+    oursAlive: 4,
+    enemyPossibleAlive: 4,
+    confirmedRallyAdvantage: false,
+    levelDisadvantage: true
+  });
+  assert.match(recommendation.action, /세 번째 공물 경합을 준비/);
+});
+
 test("Towers of Doom values altars differently based on bell tower ownership", () => {
   const state = createDefaultState();
   state["파멸의 탑"] = { oursBellTowers: 5, enemyBellTowers: 1 };
@@ -219,6 +232,44 @@ test("map-specific state changes the final page recommendation without changing 
     assert.notEqual(after.action, before.action, `${scenario.map} state should change the final action`);
     assert.equal(after.category, "맵 전략");
   }
+});
+
+test("map clock alone provides lane, camp-planning, and objective-preparation recommendations", () => {
+  const { coach } = loadCoachHarness();
+  const state = coach.defaultState();
+  state.phase = "game";
+  state.map = "공포의 정원";
+  coach.setState(state);
+
+  state.gameClockSeconds = 0;
+  const far = coach.makeRecommendation();
+  assert.match(far.action, /라인 경험치/);
+  assert.match(far.reason, /150초/);
+  assert.match(far.warning, /캠프 등장 시각/);
+
+  state.gameClockSeconds = 100;
+  const preparation = coach.makeRecommendation();
+  assert.match(preparation.action, /라인을 정리하고 팀 합류를 준비/);
+  assert.match(preparation.reason, /50초/);
+
+  state.gameClockSeconds = 130;
+  const near = coach.makeRecommendation();
+  assert.match(near.action, /팀과 합류 가능한 위치/);
+  assert.match(near.reason, /20초/);
+  assert.match(near.warning, /게임 내 신호/);
+});
+
+test("maps without a confirmed automatic objective schedule keep a safe baseline", () => {
+  const { coach } = loadCoachHarness();
+  const state = coach.defaultState();
+  state.phase = "game";
+  state.map = "거미 여왕의 무덤";
+  state.gameClockSeconds = 240;
+  coach.setState(state);
+
+  const recommendation = coach.makeRecommendation();
+  assert.match(recommendation.action, /안전한 라인 경험치/);
+  assert.doesNotMatch(recommendation.reason, /오브젝트까지 \d+초/);
 });
 
 test("map state buttons update the recommendation immediately", () => {

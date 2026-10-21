@@ -100,7 +100,7 @@
     const eventRelevant = common.objectiveActive
       && (common.objectivePhase === "active" || common.objectiveSeconds === null || common.objectiveSeconds <= 90);
     const canContest = common.confirmedRallyAdvantage
-      || (common.oursAlive >= common.enemyPossibleAlive && !common.levelDisadvantage);
+      || common.oursAlive >= common.enemyPossibleAlive;
 
     if (map === "저주받은 골짜기") {
       const data = state[map];
@@ -225,10 +225,10 @@
       const shrines = [data.topShrine, data.bottomShrine];
       if (shrines.some((shrine) => shrine === "unknown")) {
         return candidate(
-          "상·하단 신단 소유를 확인한 뒤 합류 목표를 정하세요",
-          "용의 둥지는 두 신단을 모두 보유해야 중앙 제단을 열 수 있습니다. 현재 신단 상태가 미확인이라 중앙 진입과 캠프 교환의 적절성을 판단할 수 없습니다.",
-          "신단 상태를 확인할 수 없다면 안전한 웨이브를 정리하고 중앙에 단독 진입하지 마세요.",
-          "양 신단의 소유를 입력한 뒤 팀이 함께 도착할 수 있는 신단부터 판단하세요. 적 위치를 모르면 진입을 보류하세요.",
+          "안전한 라인 경험치를 확보하고 신단 상태를 확인하세요",
+          "용의 둥지는 두 신단을 모두 보유해야 중앙 제단을 열 수 있습니다. 소유 상태가 미확인이라 중앙 진입이나 캠프 교환을 단정할 수 없습니다.",
+          "팀과 합류할 수 있는 위치에서 다음 오브젝트를 준비하세요.",
+          "확인된 안전한 웨이브만 정리하고, 양 신단 상태와 적 위치를 확인하기 전에는 중앙에 단독 진입하지 마세요.",
           "입력하지 않은 신단 소유와 캠프 가용 상태는 추정하지 않습니다.",
           "목표 개방 조건을 확인해 불필요한 중앙 집결이나 캠프 시도를 줄일 수 있습니다.",
           "확인 없이 중앙이나 캠프로 이동하면 신단 통제와 라인 경험치를 잃을 수 있습니다."
