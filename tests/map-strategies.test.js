@@ -364,26 +364,25 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   assert.match(recommendationDetails, /id="alternative"/);
   assert.ok(html.indexOf('id="fight-result"') < html.indexOf('class="objective-timer"'));
   const quickDashboard = html.match(/<section class="quick-dashboard card"([\s\S]*?)<\/section>/)?.[1];
-  assert.match(html, /\.battle-layout \{ display: grid; grid-template-columns: minmax\(0, 1fr\) minmax\(300px, 360px\);/);
-  assert.match(html, /\.side-column \{ grid-column: 2; grid-row: 1 \/ span 2;[^}]*position: sticky;/);
-  assert.match(html, /@media \(max-width: 850px\) \{\s*\.battle-layout \{ grid-template-columns: minmax\(0, 1fr\); \}\s*\.side-column \{ display: contents; \}\s*\.recommendation \{ grid-column: 1; grid-row: 1; position: sticky;/);
-  assert.match(html, /\.quick-dashboard \{ grid-column: 1; grid-row: 2; \}/);
-  assert.match(html, /\.main-column \{ grid-column: 1; grid-row: 3; \}/);
+  assert.match(html, /\.battle-layout \{ display: grid; grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(html, /\.recommendation \{ margin-top: 18px; padding-top: 16px; border-top: 1px solid var\(--line\); \}/);
   assert.match(quickDashboard, /id="game-clock"/);
   assert.match(quickDashboard, /id="quick-objective-countdown"/);
+  assert.match(quickDashboard, /id="game-timeline-progress" max="1800"/);
   assert.match(quickDashboard, /id="game-start"[^>]*>게임 시작/);
   assert.match(quickDashboard, /id="game-end"[^>]*disabled>게임 종료/);
   assert.match(quickDashboard, /id="match-status"/);
   assert.match(quickDashboard, /id="quick-death-counts"/);
-  assert.match(quickDashboard, /data-death-team="ours"/);
-  assert.match(quickDashboard, /data-death-team="enemy"/);
+  assert.match(quickDashboard, /id="recommendation"/);
+  assert.doesNotMatch(quickDashboard, /data-death-team=/);
   assert.match(html, /id="start-match"[^>]*>새 경기 시작/);
   assert.match(html, /id="resume-match"[^>]*hidden>저장된 경기 이어하기/);
   assert.doesNotMatch(quickDashboard, /간편 모드/);
   assert.match(quickDashboard, /id="back-to-prep"[^>]*>준비 화면으로/);
-  for (const action of ["objective-contested", "ally-dead"]) {
+  for (const action of ["objective-end", "ally-dead", "enemy-dead"]) {
     assert.match(quickDashboard, new RegExp(`data-quick-action="${action}"`));
   }
+  assert.equal((quickDashboard.match(/data-quick-action=/g) || []).length, 3);
   assert.doesNotMatch(quickDashboard, /data-quick-action="fight-(?:won|lost)"/);
   assert.match(html, /<details id="detailed-inputs" class="full-controls">/);
 });
@@ -509,17 +508,20 @@ test("quick team death counts update survival and fight recommendations without 
   const { coach, querySelector } = loadCoachHarness();
   const state = coach.defaultState();
   coach.setState(state);
-  const click = querySelector("#quick-death-counts").listeners.click;
-  const press = (team, step) => click({
+  const click = querySelector(".quick-choice-grid").listeners.click;
+  const press = (action) => click({
     target: {
-      closest: () => ({ dataset: { deathTeam: team, step: String(step) } })
+      closest: () => ({ dataset: { quickAction: action } })
     }
   });
 
-  press("ours", 1);
-  press("enemy", 2);
+  press("ally-dead");
+  press("enemy-dead");
+  press("enemy-dead");
   assert.equal(state.reportedDeaths.ours, 1);
   assert.equal(state.reportedDeaths.enemy, 2);
+  assert.equal(querySelector('[data-death-count="ours"]').textContent, "1");
+  assert.equal(querySelector('[data-death-adjust-count="enemy"]').textContent, "2");
   const oursSurvival = coach.teamSurvival("ours");
   assert.equal(oursSurvival.confirmedAlive, 4);
   assert.equal(oursSurvival.possibleAlive, 4);
@@ -579,7 +581,7 @@ test("quick objective controls preserve start, secure, correction, and undo beha
   assert.equal(state.objective, "contested");
 });
 
-test("quick objective card updates recommendation and ally death card reveals details", () => {
+test("quick objective-end action starts the next objective timer and records team deaths", () => {
   const { coach, querySelector } = loadCoachHarness();
   const state = coach.defaultState();
   state.map = "저주받은 골짜기";
@@ -597,11 +599,28 @@ test("quick objective card updates recommendation and ally death card reveals de
     };
     click({ target: button });
   };
-  clickAction("objective-contested");
-  assert.equal(state.objectiveEventStatus, "active");
-  assert.equal(state.objective, "contested");
-  assert.equal(querySelector("#quick-objective-countdown").textContent, "진행 중");
+  clickAction("objective-end");
+  assert.equal(state.objectiveEventStatus, "ended");
+  assert.equal(state.objective, "soon");
+  assert.equal(querySelector("#quick-objective-countdown").textContent, "50초–1분 30초 후");
+  assert.equal(state.lastObjectiveEndedAt, 140);
   clickAction("ally-dead");
-  assert.equal(querySelector("#detailed-inputs").open, true);
-  assert.equal(querySelector("#hero-details").open, true);
+  assert.equal(state.reportedDeaths.ours, 1);
+  clickAction("enemy-dead");
+  assert.equal(state.reportedDeaths.enemy, 1);
+});
+
+test("game timeline follows the clock and stays capped after thirty minutes", () => {
+  const { coach, querySelector, now, setTime } = loadCoachHarness();
+  const state = coach.defaultState();
+  state.gameStatus = "active";
+  state.gameClockSeconds = 1795;
+  state.gameClockStartedAt = now();
+  coach.setState(state);
+
+  setTime(now() + 10000);
+  coach.renderObjectiveTimer();
+  assert.equal(querySelector("#game-clock").textContent, "30:05");
+  assert.equal(querySelector("#game-timeline-progress").value, 1800);
+  assert.equal(querySelector("#game-timeline-current").textContent, "30:05 · 30분 초과");
 });

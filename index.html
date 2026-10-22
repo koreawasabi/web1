@@ -57,7 +57,7 @@
       .subtitle { margin: 8px 0 0; color: var(--muted); font-size: .95rem; }
       .save-state { color: var(--muted); font-size: .8rem; text-align: right; }
       .save-state.error { color: var(--red); }
-      .main-column, .side-column { display: grid; gap: 18px; min-width: 0; }
+      .main-column { display: grid; gap: 18px; min-width: 0; }
       .card { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(25,31,44,.86); box-shadow: 0 12px 32px #0002; }
       .card-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
       h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
@@ -128,16 +128,20 @@
       .primary-button:hover { background: #81ccff; }
       .secondary-button { border-color: var(--line); background: transparent; color: var(--text); }
       .secondary-button:hover { border-color: var(--blue); }
-      .battle-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); align-items: start; gap: 18px; }
-      .side-column { grid-column: 2; grid-row: 1 / span 2; display: grid; align-content: start; gap: 18px; position: sticky; top: 16px; }
-      .quick-dashboard { grid-column: 1; grid-row: 1; }
-      .main-column { grid-column: 1; grid-row: 2; }
+      .battle-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 18px; }
+      .quick-dashboard, .main-column { grid-column: 1; }
       .quick-dashboard-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
       .quick-dashboard-header h2 { margin: 0; font-size: 1.25rem; }
       .quick-clock-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
       .quick-clock-item:last-child { text-align: right; }
       .quick-clock-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: .82rem; }
       .quick-clock-value { font-size: 1.65rem; font-variant-numeric: tabular-nums; font-weight: 850; }
+      .game-timeline { margin: -4px 0 14px; }
+      .game-timeline progress { display: block; width: 100%; height: 10px; overflow: hidden; border: 0; border-radius: 999px; background: #0b111a; accent-color: var(--blue); }
+      .game-timeline progress::-webkit-progress-bar { border-radius: 999px; background: #0b111a; }
+      .game-timeline progress::-webkit-progress-value { border-radius: 999px; background: linear-gradient(90deg, #54b7ff, #7bddaa); }
+      .game-timeline progress::-moz-progress-bar { border-radius: 999px; background: linear-gradient(90deg, #54b7ff, #7bddaa); }
+      .game-timeline-label { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums; }
       .match-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
       .match-controls > div { display: flex; gap: 8px; }
       .match-status { color: var(--muted); font-size: .85rem; font-weight: 700; }
@@ -145,17 +149,17 @@
       .match-controls #game-start { border-color: transparent; background: var(--blue); color: #07111c; }
       .match-controls button:disabled { cursor: not-allowed; opacity: .5; }
       .quick-section-title { margin: 16px 0 10px; font-size: 1rem; }
-      .quick-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+      .quick-choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
       .quick-choice {
-        display: grid; min-height: 98px; place-content: center; justify-items: center; gap: 9px;
+        display: grid; min-height: 68px; place-content: center; justify-items: center; gap: 7px;
         border: 1px solid var(--line); border-radius: 12px; background: #111824; color: var(--text);
-        font-size: 1rem; font-weight: 700;
+        font-size: .92rem; font-weight: 700;
       }
       .quick-choice:hover, .quick-choice:focus-visible { border-color: var(--blue); background: #202d40; }
-      .quick-choice[aria-pressed="true"] { border-color: var(--blue); background: #1e3a52; color: #a7dcff; }
       .quick-icon { font-size: 1.35rem; line-height: 1; }
       .quick-back { min-height: 36px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); }
       .quick-death-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
+      .quick-death-counts.readonly { margin: 10px 0 0; }
       .quick-death-team { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: #111824; }
       .quick-death-team > span { font-size: .82rem; font-weight: 750; }
       .quick-death-team > div { display: flex; align-items: center; gap: 7px; }
@@ -242,7 +246,7 @@
       .secondary-inputs[open] { margin-bottom: 14px; }
       .objective-options { display: flex; flex-wrap: wrap; gap: 10px 16px; }
       .objective-options label { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; }
-      .recommendation { position: sticky; top: 16px; border-color: #455774; background: linear-gradient(145deg, #202d40, #191f2c 72%); }
+      .recommendation { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
       .recommendation .card-heading { margin-bottom: 11px; }
       .recommendation-label { color: var(--gold); font-size: .76rem; font-weight: 800; letter-spacing: .1em; }
       .coach-status { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 0 0 12px; }
@@ -306,16 +310,7 @@
       .footnote { margin: 0; color: var(--muted); font-size: .76rem; }
       .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
       [hidden] { display: none !important; }
-      @media (max-width: 850px) {
-        .battle-layout { grid-template-columns: minmax(0, 1fr); }
-        .side-column { display: contents; }
-        .recommendation { grid-column: 1; grid-row: 1; position: sticky; top: 8px; z-index: 10; max-height: min(46vh, 360px); overflow-y: auto; }
-        .quick-dashboard { grid-column: 1; grid-row: 2; }
-        .main-column { grid-column: 1; grid-row: 3; }
-        .side-column > .card:not(.recommendation) { grid-column: 1; grid-row: 4; }
-      }
       @media (max-width: 600px) {
-        .card.recommendation { padding: 11px 13px; }
         .recommendation .card-heading { margin-bottom: 6px; }
         .recommendation .reason { margin-top: 7px; }
         .recommendation .reason p { margin-top: 3px; }
@@ -360,6 +355,10 @@
         .quick-objective-controls { grid-template-columns: 1fr 1fr; }
         .quick-objective-controls select { grid-column: 1 / -1; }
         .quick-choice { min-height: 88px; }
+      }
+      @media (max-width: 420px) {
+        .quick-choice-grid { grid-template-columns: 1fr; }
+        .quick-choice { min-height: 48px; grid-template-columns: 24px auto; justify-content: center; }
       }
       @media (max-width: 380px) {
         #battle-rosters { gap: 6px; }
@@ -457,8 +456,54 @@
         </section>
 
         <section id="game-screen" class="battle-layout" aria-label="게임 중 전황 입력" hidden>
-          <aside class="side-column">
-            <section class="card recommendation" aria-labelledby="recommend-heading">
+          <section class="quick-dashboard card" aria-labelledby="battle-heading">
+            <div class="quick-dashboard-header">
+              <h2 id="battle-heading">게임 중 전황</h2>
+              <button id="back-to-prep" class="quick-back" type="button">준비 화면으로</button>
+            </div>
+            <div class="quick-clock-row">
+              <div class="quick-clock-item">
+                <span class="quick-clock-label">게임 시간</span>
+                <span id="game-clock" class="quick-clock-value" aria-live="off">00:00</span>
+              </div>
+              <div class="quick-clock-item">
+                <span class="quick-clock-label">다음 오브젝트</span>
+                <span id="quick-objective-countdown" class="quick-clock-value">미확인</span>
+              </div>
+            </div>
+            <div class="game-timeline" aria-label="게임 진행도">
+              <progress id="game-timeline-progress" max="1800" value="0" aria-label="30분 기준 게임 진행도"></progress>
+              <div class="game-timeline-label"><span id="game-timeline-current">00:00</span><span>30:00</span></div>
+            </div>
+            <div class="match-controls">
+              <span id="match-status" class="match-status" role="status" aria-live="polite">게임 시작 전</span>
+              <div>
+                <button id="game-start" type="button">게임 시작</button>
+                <button id="game-end" type="button" disabled>게임 종료</button>
+              </div>
+            </div>
+            <h3 class="quick-section-title">지금 상황을 선택해</h3>
+            <div class="quick-choice-grid" aria-label="빠른 상황 입력">
+              <button class="quick-choice" type="button" data-quick-action="objective-end">
+                <span class="quick-icon" aria-hidden="true">◎</span><span>오브젝트 종료</span>
+              </button>
+              <button class="quick-choice" type="button" data-quick-action="ally-dead">
+                <span class="quick-icon" aria-hidden="true">☠</span><span>아군 사망</span>
+              </button>
+              <button class="quick-choice" type="button" data-quick-action="enemy-dead">
+                <span class="quick-icon" aria-hidden="true">☠</span><span>적군 사망</span>
+              </button>
+            </div>
+            <div id="quick-death-counts" class="quick-death-counts readonly" aria-label="양 팀 전체 사망 수">
+              <div class="quick-death-team">
+                <span>아군 사망 수</span><output data-death-count="ours">미확인</output>
+              </div>
+              <div class="quick-death-team">
+                <span>적군 사망 수</span><output data-death-count="enemy">미확인</output>
+              </div>
+            </div>
+            <p class="hint">사망 버튼을 누르면 확인된 팀 전체 사망 수에 반영됩니다. 영웅별 입력과 중복되면 더 큰 확인 수만 반영합니다.</p>
+            <section class="recommendation" aria-labelledby="recommend-heading">
               <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
               <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
               <div class="reason">
@@ -501,66 +546,33 @@
                 <p class="coach-limit">궁극기 참고는 일부 영웅의 교전 영향 잠재력에 대한 추정입니다. 선택한 궁극기와 실제 재사용 대기시간은 확인하지 않습니다.</p>
               </details>
             </section>
-            <section class="card">
-              <h2>사용 안내</h2>
-              <p class="footnote" style="margin-top:9px">추천은 생존·레벨·부활·오브젝트·궁극기 입력을 활용하는 일반 규칙입니다. 맵·영웅별 승률이나 조합 분석은 제공하지 않습니다.</p>
-            </section>
-          </aside>
-          <section class="quick-dashboard card" aria-labelledby="battle-heading">
-            <div class="quick-dashboard-header">
-              <h2 id="battle-heading">게임 중 전황</h2>
-              <button id="back-to-prep" class="quick-back" type="button">준비 화면으로</button>
-            </div>
-            <div class="quick-clock-row">
-              <div class="quick-clock-item">
-                <span class="quick-clock-label">게임 시간</span>
-                <span id="game-clock" class="quick-clock-value" aria-live="off">00:00</span>
-              </div>
-              <div class="quick-clock-item">
-                <span class="quick-clock-label">다음 오브젝트</span>
-                <span id="quick-objective-countdown" class="quick-clock-value">미확인</span>
-              </div>
-            </div>
-            <div class="match-controls">
-              <span id="match-status" class="match-status" role="status" aria-live="polite">게임 시작 전</span>
-              <div>
-                <button id="game-start" type="button">게임 시작</button>
-                <button id="game-end" type="button" disabled>게임 종료</button>
-              </div>
-            </div>
-            <h3 class="quick-section-title">지금 상황을 선택해</h3>
-            <div class="quick-choice-grid" aria-label="빠른 상황 입력">
-              <button class="quick-choice" type="button" data-quick-action="objective-contested" aria-pressed="false">
-                <span class="quick-icon" aria-hidden="true">◎</span><span>오브젝트 경합</span>
-              </button>
-              <button class="quick-choice" type="button" data-quick-action="ally-dead" aria-pressed="false">
-                <span class="quick-icon" aria-hidden="true">☠</span><span>아군 사망</span>
-              </button>
-            </div>
-            <div id="quick-death-counts" class="quick-death-counts" aria-label="양 팀 전체 사망 수">
-              <div class="quick-death-team">
-                <span>아군 사망</span>
-                <div>
-                  <button type="button" data-death-team="ours" data-step="-1" aria-label="아군 사망 수 감소">−</button>
-                  <output data-death-count="ours">미확인</output>
-                  <button type="button" data-death-team="ours" data-step="1" aria-label="아군 사망 수 증가">+</button>
-                </div>
-              </div>
-              <div class="quick-death-team">
-                <span>상대 사망</span>
-                <div>
-                  <button type="button" data-death-team="enemy" data-step="-1" aria-label="상대 사망 수 감소">−</button>
-                  <output data-death-count="enemy">미확인</output>
-                  <button type="button" data-death-team="enemy" data-step="1" aria-label="상대 사망 수 증가">+</button>
-                </div>
-              </div>
-            </div>
-            <p class="hint">팀 전체 사망 수를 입력합니다. 영웅별 사망 입력과 중복되면 더 큰 확인 수를 반영합니다.</p>
           </section>
           <div class="main-column">
             <details id="detailed-inputs" class="full-controls">
               <summary>상세 입력 · 레벨, 맵 상태, 영웅 정보</summary>
               <section class="card" aria-label="상세 전황 입력">
+              <details class="secondary-inputs">
+                <summary>팀 전체 사망 수 직접 조정</summary>
+                <div id="quick-death-count-adjustments" class="quick-death-counts" aria-label="양 팀 전체 사망 수 조정">
+                  <div class="quick-death-team">
+                    <span>아군</span>
+                    <div>
+                      <button type="button" data-death-team="ours" data-step="-1" aria-label="아군 사망 수 감소">−</button>
+                      <output data-death-adjust-count="ours">미확인</output>
+                      <button type="button" data-death-team="ours" data-step="1" aria-label="아군 사망 수 증가">+</button>
+                    </div>
+                  </div>
+                  <div class="quick-death-team">
+                    <span>적군</span>
+                    <div>
+                      <button type="button" data-death-team="enemy" data-step="-1" aria-label="적군 사망 수 감소">−</button>
+                      <output data-death-adjust-count="enemy">미확인</output>
+                      <button type="button" data-death-team="enemy" data-step="1" aria-label="적군 사망 수 증가">+</button>
+                    </div>
+                  </div>
+                </div>
+                <p class="hint">영웅별 사망 입력과 중복되면 더 큰 확인 수를 반영합니다.</p>
+              </details>
               <div class="level-controls">
                 <div>
                   <label class="field-label" for="ours-level">우리 팀 현재 레벨 (1–30)</label>
@@ -792,7 +804,7 @@
           ["You can lose the game without losing your composure.", "게임은 져도 평정심까지 잃을 필요는 없다."]
         ];
         const heroList = [
-          "가로쉬","가즈로","갈","겐지","굴단","길 잃은 바이킹","나지보","노바","누더기","데커드 케인",
+          "가로쉬","가즈로","갈","겐지","그레이메인","굴단","길 잃은 바이킹","나지보","노바","누더기","데커드 케인",
           "데스윙","데하카","도살자","디아블로","라그나로스","레가르","레이너","레오릭","렉사르","루나라",
           "루시우","리 리","리밍","마이에브","말가니스","말퓨리온","말티엘","메디브","메이","메피스토",
           "머키","모랄레스 중위","무라딘","바리안","발라","발리라","블레이즈","빛나래","사무로","소냐",
@@ -805,7 +817,7 @@
         ].filter((hero, index, list) => list.indexOf(hero) === index).sort((a, b) => a.localeCompare(b, "ko"));
         const heroPortraits = {
           "가로쉬": "garrosh", "가즈로": "gazlowe", "갈": "gall", "겐지": "genji", "굴단": "guldan",
-          "길 잃은 바이킹": "the-lost-vikings", "나지보": "nazeebo", "노바": "nova", "누더기": "stitches",
+          "그레이메인": "greymane", "길 잃은 바이킹": "the-lost-vikings", "나지보": "nazeebo", "노바": "nova", "누더기": "stitches",
           "데커드 케인": "deckard", "데스윙": "deathwing", "데하카": "dehaka",           "도살자": "the-butcher",
           "디아블로": "diablo", "라그나로스": "ragnaros", "레가르": "rehgar", "레이너": "raynor",
           "레오릭": "leoric", "렉사르": "rexxar", "루나라": "lunara", "루시우": "lucio", "리 리": "li-li",
@@ -1299,6 +1311,9 @@
             && timer.maxRemaining !== timer.minRemaining;
           const rule = mapObjectiveRules[state.map];
           document.querySelector("#game-clock").textContent = formatGameTime(now);
+          document.querySelector("#game-timeline-progress").value = Math.min(now, 1800);
+          document.querySelector("#game-timeline-current").textContent =
+            `${formatGameTime(now)}${now > 1800 ? " · 30분 초과" : ""}`;
           document.querySelector("#match-status").textContent = ({
             waiting: "게임 시작 전",
             active: state.gameClockStartedAt ? "게임 진행 중" : "게임 일시정지",
@@ -2311,10 +2326,11 @@
             row.append(teamLabel, count);
             survivalSummary.append(row);
             const deathCount = state.battle[team].filter((member) => !member.alive).length;
-            document.querySelector(`[data-death-count="${team}"]`).textContent =
-              state.reportedDeaths[team] === null
-                ? deathCount ? `${deathCount}+?` : "?"
-                : String(Math.max(state.reportedDeaths[team], deathCount));
+            const deathCountText = state.reportedDeaths[team] === null
+              ? deathCount ? `${deathCount}+?` : "?"
+              : String(Math.max(state.reportedDeaths[team], deathCount));
+            document.querySelector(`[data-death-count="${team}"]`).textContent = deathCountText;
+            document.querySelector(`[data-death-adjust-count="${team}"]`).textContent = deathCountText;
           }
           const urgency = document.querySelector("#urgency");
           urgency.textContent = recommendation.urgency;
@@ -2334,16 +2350,7 @@
         }
 
         function renderQuickActions() {
-          const hasKnownAllyDeath = state.battle.ours.some((member, index) =>
-            (pickedHero("ours", index) || member.hero) && !member.alive
-          );
-          const selected = {
-            "objective-contested": state.objectiveEventStatus === "active",
-            "ally-dead": hasKnownAllyDeath
-          };
-          document.querySelector(".quick-choice-grid").querySelectorAll("[data-quick-action]").forEach((button) => {
-            button.setAttribute("aria-pressed", String(selected[button.dataset.quickAction]));
-          });
+          document.querySelector("#game-timeline-progress").setAttribute("aria-valuetext", `${formatGameTime(gameTimeSeconds())} / 30:00`);
         }
 
         function updateMapBackground() {
@@ -2555,24 +2562,22 @@
         document.querySelector(".quick-choice-grid").addEventListener("click", (event) => {
           const button = event.target.closest("[data-quick-action]");
           if (!button) return;
-          if (button.dataset.quickAction === "objective-contested") {
-            if (state.objectiveEventStatus !== "active") startObjectiveEvent();
+          if (button.dataset.quickAction === "objective-end") {
+            endObjectiveEvent("unknown", state.objectiveEndKind);
             document.querySelector("#objective").value = state.objective;
             renderObjectiveTimer();
             updateRecommendation();
             persist();
             return;
           }
-          if (button.dataset.quickAction === "ally-dead") {
-            document.querySelector("#detailed-inputs").open = true;
-            const heroDetails = document.querySelector("#hero-details");
-            heroDetails.open = true;
-            const roster = document.querySelector("#battle-rosters");
-            roster.scrollIntoView({ behavior: "smooth", block: "start" });
-            roster.querySelector(".hero-row .life-button[data-team='ours'][data-value='dead']")?.focus();
-          }
+          const team = button.dataset.quickAction === "ally-dead" ? "ours"
+            : button.dataset.quickAction === "enemy-dead" ? "enemy" : null;
+          if (!team) return;
+          state.reportedDeaths[team] = Math.min(5, (state.reportedDeaths[team] ?? 0) + 1);
+          updateRecommendation();
+          persist();
         });
-        document.querySelector("#quick-death-counts").addEventListener("click", (event) => {
+        document.querySelector("#quick-death-count-adjustments").addEventListener("click", (event) => {
           const button = event.target.closest("[data-death-team]");
           if (!button) return;
           const team = button.dataset.deathTeam;
