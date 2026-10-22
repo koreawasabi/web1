@@ -610,6 +610,25 @@ test("quick objective-end action starts the next objective timer and records tea
   assert.equal(state.reportedDeaths.enemy, 1);
 });
 
+test("Haunted Mines opens at three minutes and reopens two minutes after the golem phase ends", () => {
+  const { coach, querySelector } = loadCoachHarness();
+  const state = coach.defaultState();
+  state.map = "죽음의 광산";
+  state.gameClockSeconds = 150;
+  state.gameClockStartedAt = null;
+  coach.setState(state);
+
+  coach.renderObjectiveTimer();
+  assert.equal(querySelector("#quick-objective-countdown").textContent, "30초 후");
+  assert.match(querySelector("#objective-countdown").textContent, /03:00/);
+
+  state.gameClockSeconds = 420;
+  querySelector("#objective-end").listeners.click();
+  assert.equal(state.lastObjectiveEndedAt, 420);
+  assert.equal(querySelector("#quick-objective-countdown").textContent, "2분 후");
+  assert.match(querySelector("#objective-countdown").textContent, /09:00/);
+});
+
 test("game timeline follows the clock and stays capped after thirty minutes", () => {
   const { coach, querySelector, now, setTime } = loadCoachHarness();
   const state = coach.defaultState();

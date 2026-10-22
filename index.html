@@ -942,6 +942,12 @@
             repeat: { mode: "manual" },
             note: "화물은 진행·호위 상태에 따라 움직이는 목표이며 고정 재등장 타이머가 없습니다."
           },
+          "죽음의 광산": {
+            name: "광산",
+            first: { revealAt: null, warningAt: 150, startsAt: 180 },
+            repeat: { mode: "afterEnd", seconds: 120 },
+            note: "첫 광산은 3:00에 열리며 0:30 전에 예고됩니다. 후속 광산은 양 팀 골렘이 모두 처치된 뒤 2:00 후 다시 열리므로, 오브젝트 종료 입력은 두 골렘 처치 시점에 하세요."
+          },
           "블랙하트 항만": {
             name: "금화 반납",
             first: null,
