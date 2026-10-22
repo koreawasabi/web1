@@ -538,15 +538,19 @@ test("quick team death counts update survival and fight recommendations without 
   assert.equal(coach.teamSurvival("ours").confirmedAlive, 4, "reported and individual deaths are not double-counted");
 });
 
-test("repeated quick updates vary the primary action wording without changing its advice", () => {
-  const { coach, querySelector } = loadCoachHarness();
+test("repeated quick updates vary the primary action wording and timer refresh preserves it", () => {
+  const { coach, querySelector, runIntervals } = loadCoachHarness();
   coach.updateRecommendation(true);
   const firstAction = querySelector("#recommendation").textContent;
+  runIntervals();
+  assert.equal(querySelector("#recommendation").textContent, firstAction, "passive timer refresh preserves the current coaching phrase");
   coach.updateRecommendation(true);
   const repeatedAction = querySelector("#recommendation").textContent;
   assert.notEqual(repeatedAction, firstAction);
-  assert.match(firstAction, /안전한 라인 경험치를 챙기며 전황을/);
-  assert.match(repeatedAction, /안전한 라인 경험치를 챙기며 전황을/);
+  assert.match(firstAction, /라인|웨이브|경험치|특성/);
+  assert.match(repeatedAction, /라인|웨이브|경험치|특성/);
+  assert.ok(firstAction.split(" ").length >= 6);
+  assert.ok(repeatedAction.split(" ").length >= 6);
 });
 
 test("respawn countdown revives a dead member at zero", () => {

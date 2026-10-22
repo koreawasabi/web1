@@ -1073,6 +1073,8 @@
         const heroSearch = document.querySelector("#hero-search");
         let lastCoachQuoteIndex = -1;
         let coachingUpdateCount = 0;
+        let lastCoachedBaseAction = null;
+        let lastCoachedAction = null;
         let activeSlot = null;
         let state = defaultState();
 
@@ -2326,29 +2328,66 @@
         }
 
         function varyRecommendationAction(action) {
-          const variations = {
-            "팀과 함께 후퇴하세요": ["안전한 곳으로 물러나세요.", "아군이 모일 때까지 교전을 피하세요.", "더 깊이 들어가지 말고 재정비하세요."],
-            "후퇴하세요": ["교전을 피하세요.", "안전한 위치로 물러나세요.", "팀이 다시 모일 때까지 거리를 두세요."],
-            "피하세요": ["삼가세요.", "진입은 보류하세요.", "잠시 거리를 두세요."],
-            "확인하세요": ["살피세요.", "점검하세요.", "확인하는 편이 안전합니다."],
-            "준비하세요": ["미리 위치를 잡으세요.", "합류 준비를 시작하세요.", "팀이 모일 자리를 잡으세요."],
-            "모으세요": ["한데 모으세요.", "한곳에 모으세요.", "함께 모으세요."],
-            "합류하세요": ["팀과 함께 이동하세요.", "목표 쪽으로 이동을 시작하세요.", "팀에 합류해 자리를 잡으세요."],
-            "정리하세요": ["정돈하세요.", "정리해 주세요.", "정리해 두세요."],
-            "압박하세요": ["공략하세요.", "계속 밀어붙이세요.", "압박을 이어가세요."],
-            "확보하세요": ["먼저 챙기세요.", "점령하세요.", "가져오세요."],
-            "챙기세요": ["미리 확보하세요.", "미리 챙겨두세요.", "확보를 우선하세요."],
-            "찾으세요": ["살펴보세요.", "물색하세요.", "찾아보세요."],
-            "보세요": ["살펴보세요.", "확인해 보세요.", "점검하세요."],
-            "하세요": ["하십시오.", "해 주세요.", "하시는 편이 좋습니다."]
-          };
-          for (const [ending, phrases] of Object.entries(variations)) {
-            if (action.endsWith(ending)) {
-              const prefix = action.slice(0, -ending.length);
-              return `${prefix}${phrases[coachingUpdateCount % phrases.length]}`;
-            }
-          }
-          return action;
+          const options = /후퇴|물러|피하|중단|끊고|보류/.test(action)
+            ? [
+              "교전을 멈추고 생존 인원부터 보존하세요.",
+              "수적 열세라면 한발 물러나 팀을 재정비하세요.",
+            "적과 거리를 벌려 다음 합류 기회를 기다리세요.",
+            "지금은 버티는 것보다 안전하게 빠져 다음 교전을 준비할 때입니다.",
+            "고립된 팀원을 따라 들어가지 말고, 살아남은 인원과 함께 후퇴하세요.",
+            "불리한 싸움은 끊고 체력과 궁극기를 추스른 뒤 다시 모이세요.",
+            "상대가 먼저 물러설 때까지 깊이 들어가지 말고 안전한 길을 확보하세요."
+            ]
+            : /라인|웨이브|경험치/.test(action)
+              ? [
+                "라인 경험치를 놓치지 말고 안전한 웨이브를 정리하세요.",
+                "사이드 라인을 정돈해 다음 특성 구간을 준비하세요.",
+                "무리한 교전보다 경험치를 먼저 챙긴 뒤 팀에 합류하세요.",
+                "우리 돌격병이 쓰러지기 전에 라인을 받아 경험치 손실을 줄이세요.",
+                "적 위치가 보이지 않는다면 깊게 밀지 말고 가까운 웨이브만 챙기세요.",
+                "한 명씩 흩어지기보다 함께 라인을 정리하고 다음 목표로 이동하세요.",
+                "특성 차이를 좁힐 경험치를 우선 확보한 뒤 교전을 다시 판단하세요."
+              ]
+            : /오브젝트|제단|공물/.test(action)
+              ? [
+                "목표 진입로 시야를 확인하고 팀과 함께 자리를 잡으세요.",
+                "오브젝트 타이밍에 맞춰 흩어진 팀원을 모으세요.",
+                "합류를 먼저 맞춘 뒤 안전한 진입 각을 살피세요.",
+                "목표 주변을 혼자 확인하지 말고, 팀이 도착할 경로부터 정돈하세요.",
+                "상대 위치와 생존 인원을 확인한 뒤 경합할지 교환할지 결정하세요.",
+                "먼저 자리를 잡되, 팀보다 앞서 들어가 고립되지 않도록 주의하세요.",
+                "생성 시각이 가까워졌습니다. 라인을 마무리하고 목표 쪽으로 이동하세요."
+              ]
+              : /캠프/.test(action)
+                ? [
+                  "안전이 확인된 캠프가 있다면 그쪽으로 이득을 돌리세요.",
+                  "무리한 교전 대신 가까운 용병 캠프를 활용하세요.",
+                  "캠프 가용성과 적 위치를 확인해 지도 압박을 이어가세요.",
+                  "오브젝트까지 여유가 있는 동안 캠프를 챙기고, 합류 시각을 놓치지 마세요.",
+                  "팀원이 함께 처리할 수 있는 캠프만 선택해 불필요한 체력 손실을 막으세요.",
+                  "캠프를 시작하기 전에 적의 접근 경로와 목표까지 남은 시간을 확인하세요.",
+                  "캠프 압박을 만든 뒤에는 오래 머물지 말고 팀과 다시 합류하세요."
+                ]
+                : /시야|확인|살피|진입 경로/.test(action)
+                  ? [
+                    "먼저 시야를 확보하고 적의 위치부터 파악하세요.",
+                    "정보가 모일 때까지 진입을 늦추고 주변을 살피세요.",
+                    "팀과 시야를 나눠 확인한 뒤 다음 움직임을 결정하세요.",
+                    "보이지 않는 적을 가정하고, 확인된 길목부터 안전하게 살펴보세요.",
+                    "시야 없이 먼저 들어가면 역습에 노출됩니다. 아군과 함께 확인하세요.",
+                    "상대의 위치가 드러날 때까지 무리한 진입은 보류하고 간격을 유지하세요.",
+                    "주요 진입로를 점검한 뒤 숫자가 맞는 곳에서 움직이세요."
+                  ]
+                  : [
+                    "팀과 발을 맞춰 안전한 이득부터 만들어 보세요.",
+                    "고립되지 않게 동료와 함께 움직이며 다음 기회를 살피세요.",
+                    "위험을 감수하기보다 확실한 이득을 차근차근 쌓으세요.",
+                    "지금 확인된 정보만으로는 교전을 단정하기 어렵습니다. 팀과 함께 움직이세요.",
+                    "한 번에 큰 이득을 노리기보다 안전한 선택을 이어가며 우위를 만드세요.",
+                    "아군의 합류 여부를 확인하고, 고립되지 않는 위치에서 다음 행동을 고르세요.",
+                    "상대가 보이지 않을 때는 깊게 전진하지 말고 안전한 곳에서 정보를 모으세요."
+                  ];
+          return options[coachingUpdateCount % options.length];
         }
 
         function updateRecommendation(freshInput = false) {
@@ -2396,10 +2435,16 @@
           document.querySelector("#recommendation-category").textContent = recommendation.category;
           document.querySelector("#evidence-level").textContent = `근거 ${recommendation.evidence}`;
           document.querySelector("#diagnosis").textContent = recommendation.diagnosis;
-          if (freshInput) coachingUpdateCount += 1;
-          document.querySelector("#recommendation").textContent = freshInput
-            ? varyRecommendationAction(recommendation.action)
-            : recommendation.action;
+          if (freshInput) {
+            coachingUpdateCount += 1;
+            lastCoachedBaseAction = recommendation.action;
+            lastCoachedAction = varyRecommendationAction(recommendation.action);
+          } else if (lastCoachedBaseAction !== recommendation.action) {
+            lastCoachedBaseAction = null;
+            lastCoachedAction = null;
+          }
+          document.querySelector("#recommendation").textContent =
+            lastCoachedBaseAction === recommendation.action ? lastCoachedAction : recommendation.action;
           const liveTip = liveSituationTip();
           document.querySelector("#reason").textContent = liveTip
             ? `${recommendation.reason} 실시간 전황 팁: ${liveTip}`
