@@ -375,6 +375,8 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   assert.match(html, /id="quick-death-counts"/);
   assert.match(html, /id="recommendation"/);
   assert.match(html, /id="quick-death-count-adjustments"/);
+  assert.doesNotMatch(html, /live-coaching/);
+  assert.match(html, /판단 근거 · 실시간 전황 팁/);
   assert.match(html, /id="start-match"[^>]*>새 경기 시작/);
   assert.match(html, /id="resume-match"[^>]*hidden>저장된 경기 이어하기/);
   assert.doesNotMatch(quickDashboard, /간편 모드/);
@@ -516,9 +518,9 @@ test("quick team death counts update survival and fight recommendations without 
   });
 
   press("ally-dead");
-  const oneAllyDeathCoaching = querySelector("#live-coaching-update").textContent;
-  assert.match(oneAllyDeathCoaching, /아군이 1명 열세/);
-  assert.match(oneAllyDeathCoaching, /단독 진입은 피하고/);
+  const oneAllyDeathCoaching = querySelector("#reason").textContent;
+  assert.match(oneAllyDeathCoaching, /아군 사망 1명이 확인됐고 적군 사망 수는 미확인/);
+  assert.match(oneAllyDeathCoaching, /인원 우위를 단정하지 말고/);
   press("enemy-dead");
   press("enemy-dead");
   assert.equal(state.reportedDeaths.ours, 1);
@@ -632,18 +634,18 @@ test("team revive actions reduce death counts and refresh live coaching", () => 
   clickAction("ally-revived");
   assert.equal(state.reportedDeaths.ours, 0);
   assert.equal(querySelector('[data-death-count="ours"]').textContent, "0");
-  assert.match(querySelector("#live-coaching-update").textContent, /적군이 2명 열세/);
+  assert.match(querySelector("#reason").textContent, /적군이 2명 열세/);
 
   clickAction("enemy-revived");
   assert.equal(state.reportedDeaths.enemy, 1);
   assert.equal(state.battle.enemy[0].alive, true);
   assert.equal(state.battle.enemy[0].respawn, null);
   assert.equal(state.battle.enemy[0].respawnStartedAt, null);
-  assert.match(querySelector("#live-coaching-update").textContent, /적군이 1명 열세/);
+  assert.match(querySelector("#reason").textContent, /적군이 1명 열세/);
 
   clickAction("enemy-revived");
   assert.equal(state.reportedDeaths.enemy, 0);
-  assert.match(querySelector("#live-coaching-update").textContent, /확정된 수적 우위가 없으니/);
+  assert.match(querySelector("#reason").textContent, /확정된 수적 우위가 없으니/);
 });
 
 test("Haunted Mines opens at three minutes and reopens two minutes after the golem phase ends", () => {

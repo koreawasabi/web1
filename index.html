@@ -162,9 +162,6 @@
       .quick-team-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
       .quick-choice.team-action { min-height: 42px; display: flex; align-items: center; gap: 5px; padding: 5px; font-size: .79rem; }
       .quick-choice.team-action .quick-icon { font-size: 1rem; }
-      .live-coaching { margin-top: 12px; padding: 11px 12px; border-left: 3px solid var(--gold); border-radius: 8px; background: #ffd16612; }
-      .live-coaching strong { display: block; margin-bottom: 3px; color: var(--gold); font-size: .78rem; }
-      .live-coaching p { margin: 0; font-size: .86rem; font-weight: 650; }
       .quick-choice:hover, .quick-choice:focus-visible { border-color: var(--blue); background: #202d40; }
       .quick-icon { font-size: 1.35rem; line-height: 1; }
       .quick-back { min-height: 36px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); }
@@ -269,7 +266,7 @@
       .coach-diagnosis { margin: 0 0 9px; color: #aab8cc; font-size: .78rem; font-weight: 700; }
       .recommendation-more { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 9px; }
       .recommendation-more > summary { min-height: 36px; }
-      .recommendation-reason { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+      .recommendation-reason { overflow-wrap: anywhere; }
       .survival-summary { display: grid; gap: 6px; margin: 0 0 14px; }
       .survival-team { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: #111824; font-size: .82rem; }
       .survival-team strong { font-weight: 800; }
@@ -531,10 +528,6 @@
               </div>
             </div>
             <p class="hint">사망·부활 버튼은 팀 전체 인원에 반영됩니다. 영웅별 입력과 겹치는 사망은 중복 계산하지 않습니다.</p>
-            <div class="live-coaching" aria-live="polite">
-              <strong>실시간 코칭</strong>
-              <p id="live-coaching-update">상황 버튼을 누르면 바뀐 전황에 맞춰 안내합니다.</p>
-            </div>
             <section class="recommendation" aria-labelledby="recommend-heading">
               <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
               <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
@@ -543,7 +536,7 @@
                 <p id="recommendation" class="action" aria-live="polite">상황을 입력해 주세요</p>
               </div>
               <div class="reason">
-                <strong>판단 근거</strong>
+                <strong>판단 근거 · 실시간 전황 팁</strong>
                 <p id="reason" class="recommendation-reason">정보가 부족하면 안전한 기본 행동부터 안내합니다.</p>
               </div>
               <details class="recommendation-more">
@@ -2377,7 +2370,10 @@
           document.querySelector("#evidence-level").textContent = `근거 ${recommendation.evidence}`;
           document.querySelector("#diagnosis").textContent = recommendation.diagnosis;
           document.querySelector("#recommendation").textContent = recommendation.action;
-          document.querySelector("#reason").textContent = recommendation.reason;
+          const liveTip = liveSituationTip();
+          document.querySelector("#reason").textContent = liveTip
+            ? `${recommendation.reason} 실시간 전황 팁: ${liveTip}`
+            : recommendation.reason;
           document.querySelector("#execution-condition").textContent = recommendation.executionCondition;
           document.querySelector("#alternative").textContent = recommendation.alternative;
           document.querySelector("#expected-outcome").textContent =
@@ -2391,35 +2387,40 @@
           document.querySelector("#game-timeline-progress").setAttribute("aria-valuetext", `${formatGameTime(gameTimeSeconds())} / 30:00`);
         }
 
-        function updateLiveCoaching(action, changed = true) {
-          const oursDead = teamDeadCount("ours");
-          const enemyDead = teamDeadCount("enemy");
-          const oursAlive = 5 - oursDead;
-          const enemyAlive = 5 - enemyDead;
-          let message;
-          if (!changed) {
-            message = action.endsWith("-dead")
-              ? "이미 5명 모두 사망으로 기록되어 추가 반영하지 않았습니다."
-              : "해당 팀에 사망으로 기록된 인원이 없어 부활 입력을 반영하지 않았습니다. 사망 버튼을 먼저 기록하거나 영웅별 상태를 확인하세요.";
-          } else if (action === "objective-end") {
-            const timer = objectiveTimer();
-            message = Number.isInteger(timer.minRemaining)
-              ? `오브젝트 종료를 기록했습니다. 다음 목표는 약 ${timer.minRemaining}초 후입니다. 타이머를 기준으로 라인을 정리하고 합류를 준비하세요.`
-              : "오브젝트 종료를 기록했습니다. 다음 목표 시각이 고정되지 않은 전장입니다. 게임 내 신호를 확인하거나 고급 설정에서 보정하세요.";
-          } else {
-            const team = action.startsWith("ally-") ? "아군" : "적군";
-            const event = action.endsWith("-dead") ? "사망" : "부활";
-            const difference = oursDead - enemyDead;
-            const situation = `현재 아군 ${oursAlive}명, 적군 ${enemyAlive}명 생존 추정입니다.`;
-            if (difference > 0) {
-              message = `${team} ${event}을 반영했습니다. ${situation} 아군이 ${difference}명 열세이므로 단독 진입은 피하고, 안전하게 합류하거나 교전을 끊으세요.`;
-            } else if (difference < 0) {
-              message = `${team} ${event}을 반영했습니다. ${situation} 적군이 ${Math.abs(difference)}명 열세입니다. 추격보다 가까운 안전 목표를 먼저 확인하세요.`;
-            } else {
-              message = `${team} ${event}을 반영했습니다. ${situation} 확정된 수적 우위가 없으니 팀을 모으고 시야·오브젝트 상태를 확인하세요.`;
+        function liveSituationTip() {
+          const deathCount = (team) => {
+            const rosterDeaths = state.battle[team].filter((member) => !member.alive).length;
+            const reported = state.reportedDeaths[team];
+            return {
+              known: reported !== null || rosterDeaths > 0,
+              count: Math.max(reported ?? 0, rosterDeaths)
+            };
+          };
+          const ours = deathCount("ours");
+          const enemy = deathCount("enemy");
+          if (ours.known || enemy.known) {
+            if (!ours.known || !enemy.known) {
+              const knownTeam = ours.known ? "아군" : "적군";
+              const unknownTeam = ours.known ? "적군" : "아군";
+              const knownCount = ours.known ? ours.count : enemy.count;
+              return `${knownTeam} 사망 ${knownCount}명이 확인됐고 ${unknownTeam} 사망 수는 미확인입니다. 인원 우위를 단정하지 말고 팀을 모아 시야와 오브젝트 진입 경로를 확인하세요.`;
             }
+            const difference = ours.count - enemy.count;
+            if (difference > 0) {
+              return `현재 아군 ${5 - ours.count}명, 적군 ${5 - enemy.count}명 생존 추정으로 아군이 ${difference}명 열세입니다. 사망자 부활 전 정면 교전은 피하고 안전하게 합류하거나 후퇴하세요.`;
+            }
+            if (difference < 0) {
+              return `현재 아군 ${5 - ours.count}명, 적군 ${5 - enemy.count}명 생존 추정으로 적군이 ${Math.abs(difference)}명 열세입니다. 추격보다 가까운 안전 목표를 먼저 확인하세요.`;
+            }
+            return `양 팀 사망 수가 ${ours.count}명으로 같습니다. 확정된 수적 우위가 없으니 시야와 오브젝트 상태를 확인한 뒤 함께 움직이세요.`;
           }
-          document.querySelector("#live-coaching-update").textContent = message;
+          if (state.objectiveEventStatus === "ended" || Number.isInteger(state.lastObjectiveEndedAt)) {
+            const timer = objectiveTimer();
+            return Number.isInteger(timer.minRemaining)
+              ? `다음 목표까지 약 ${timer.minRemaining}초 남았습니다. 남은 시간을 기준으로 라인을 정리하고 미리 합류를 준비하세요.`
+              : "다음 목표 시각은 고정되지 않았습니다. 게임 내 신호를 확인하거나 고급 설정에서 보정하세요.";
+          }
+          return "";
         }
 
         function updateMapBackground() {
@@ -2636,7 +2637,6 @@
             document.querySelector("#objective").value = state.objective;
             renderObjectiveTimer();
             updateRecommendation();
-            updateLiveCoaching("objective-end");
             persist();
             return;
           }
@@ -2648,12 +2648,9 @@
           };
           const action = actions[button.dataset.quickAction];
           if (!action) return;
-          let changed = true;
           if (action.event === "dead") {
             const currentDeaths = teamDeadCount(action.team);
-            if (currentDeaths >= 5) {
-              changed = false;
-            } else {
+            if (currentDeaths < 5) {
               const knownDead = state.battle[action.team].filter((member) => !member.alive).length;
               state.reportedDeaths[action.team] = Math.min(
                 5,
@@ -2669,13 +2666,9 @@
             }
             if (state.reportedDeaths[action.team] !== null) {
               state.reportedDeaths[action.team] = Math.max(0, state.reportedDeaths[action.team] - 1);
-            } else if (!deadMember) {
-              changed = false;
             }
           }
-          const coachingAction = `${action.team === "ours" ? "ally" : "enemy"}-${action.event === "revived" ? "revived" : action.event}`;
           updateRecommendation();
-          updateLiveCoaching(coachingAction, changed);
           persist();
         });
         document.querySelector("#quick-death-count-adjustments").addEventListener("click", (event) => {
