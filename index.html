@@ -149,12 +149,22 @@
       .match-controls #game-start { border-color: transparent; background: var(--blue); color: #07111c; }
       .match-controls button:disabled { cursor: not-allowed; opacity: .5; }
       .quick-section-title { margin: 16px 0 10px; font-size: 1rem; }
-      .quick-choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+      .quick-choice-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; }
       .quick-choice {
         display: grid; min-height: 68px; place-content: center; justify-items: center; gap: 7px;
         border: 1px solid var(--line); border-radius: 12px; background: #111824; color: var(--text);
         font-size: .92rem; font-weight: 700;
       }
+      .quick-choice.objective-action { width: 100%; min-height: 48px; grid-template-columns: auto auto; justify-content: center; }
+      .quick-team-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+      .quick-team-actions section { display: grid; gap: 7px; padding: 9px; border: 1px solid var(--line); border-radius: 11px; background: #111824; }
+      .quick-team-actions h4 { margin: 0; font-size: .84rem; text-align: center; }
+      .quick-team-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+      .quick-choice.team-action { min-height: 42px; display: flex; align-items: center; gap: 5px; padding: 5px; font-size: .79rem; }
+      .quick-choice.team-action .quick-icon { font-size: 1rem; }
+      .live-coaching { margin-top: 12px; padding: 11px 12px; border-left: 3px solid var(--gold); border-radius: 8px; background: #ffd16612; }
+      .live-coaching strong { display: block; margin-bottom: 3px; color: var(--gold); font-size: .78rem; }
+      .live-coaching p { margin: 0; font-size: .86rem; font-weight: 650; }
       .quick-choice:hover, .quick-choice:focus-visible { border-color: var(--blue); background: #202d40; }
       .quick-icon { font-size: 1.35rem; line-height: 1; }
       .quick-back { min-height: 36px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); }
@@ -355,10 +365,10 @@
         .quick-objective-controls { grid-template-columns: 1fr 1fr; }
         .quick-objective-controls select { grid-column: 1 / -1; }
         .quick-choice { min-height: 88px; }
+        .quick-choice.team-action { min-height: 42px; }
       }
       @media (max-width: 420px) {
-        .quick-choice-grid { grid-template-columns: 1fr; }
-        .quick-choice { min-height: 48px; grid-template-columns: 24px auto; justify-content: center; }
+        .quick-team-actions { grid-template-columns: 1fr; }
       }
       @media (max-width: 380px) {
         #battle-rosters { gap: 6px; }
@@ -484,15 +494,33 @@
             </div>
             <h3 class="quick-section-title">지금 상황을 선택해</h3>
             <div class="quick-choice-grid" aria-label="빠른 상황 입력">
-              <button class="quick-choice" type="button" data-quick-action="objective-end">
+              <button class="quick-choice objective-action" type="button" data-quick-action="objective-end">
                 <span class="quick-icon" aria-hidden="true">◎</span><span>오브젝트 종료</span>
               </button>
-              <button class="quick-choice" type="button" data-quick-action="ally-dead">
-                <span class="quick-icon" aria-hidden="true">☠</span><span>아군 사망</span>
-              </button>
-              <button class="quick-choice" type="button" data-quick-action="enemy-dead">
-                <span class="quick-icon" aria-hidden="true">☠</span><span>적군 사망</span>
-              </button>
+              <div class="quick-team-actions">
+                <section aria-label="아군 생존 입력">
+                  <h4>아군</h4>
+                  <div class="quick-team-buttons">
+                    <button class="quick-choice team-action" type="button" data-quick-action="ally-dead">
+                      <span class="quick-icon" aria-hidden="true">☠</span><span>사망</span>
+                    </button>
+                    <button class="quick-choice team-action" type="button" data-quick-action="ally-revived">
+                      <span class="quick-icon" aria-hidden="true">＋</span><span>부활</span>
+                    </button>
+                  </div>
+                </section>
+                <section aria-label="적군 생존 입력">
+                  <h4>적군</h4>
+                  <div class="quick-team-buttons">
+                    <button class="quick-choice team-action" type="button" data-quick-action="enemy-dead">
+                      <span class="quick-icon" aria-hidden="true">☠</span><span>사망</span>
+                    </button>
+                    <button class="quick-choice team-action" type="button" data-quick-action="enemy-revived">
+                      <span class="quick-icon" aria-hidden="true">＋</span><span>부활</span>
+                    </button>
+                  </div>
+                </section>
+              </div>
             </div>
             <div id="quick-death-counts" class="quick-death-counts readonly" aria-label="양 팀 전체 사망 수">
               <div class="quick-death-team">
@@ -502,7 +530,11 @@
                 <span>적군 사망 수</span><output data-death-count="enemy">미확인</output>
               </div>
             </div>
-            <p class="hint">사망 버튼을 누르면 확인된 팀 전체 사망 수에 반영됩니다. 영웅별 입력과 중복되면 더 큰 확인 수만 반영합니다.</p>
+            <p class="hint">사망·부활 버튼은 팀 전체 인원에 반영됩니다. 영웅별 입력과 겹치는 사망은 중복 계산하지 않습니다.</p>
+            <div class="live-coaching" aria-live="polite">
+              <strong>실시간 코칭</strong>
+              <p id="live-coaching-update">상황 버튼을 누르면 바뀐 전황에 맞춰 안내합니다.</p>
+            </div>
             <section class="recommendation" aria-labelledby="recommend-heading">
               <div class="card-heading"><span class="recommendation-label">NEXT PLAY</span><span class="subtle">규칙 기반</span></div>
               <h2 id="recommend-heading" class="visually-hidden">다음 행동 추천</h2>
@@ -2359,6 +2391,37 @@
           document.querySelector("#game-timeline-progress").setAttribute("aria-valuetext", `${formatGameTime(gameTimeSeconds())} / 30:00`);
         }
 
+        function updateLiveCoaching(action, changed = true) {
+          const oursDead = teamDeadCount("ours");
+          const enemyDead = teamDeadCount("enemy");
+          const oursAlive = 5 - oursDead;
+          const enemyAlive = 5 - enemyDead;
+          let message;
+          if (!changed) {
+            message = action.endsWith("-dead")
+              ? "이미 5명 모두 사망으로 기록되어 추가 반영하지 않았습니다."
+              : "해당 팀에 사망으로 기록된 인원이 없어 부활 입력을 반영하지 않았습니다. 사망 버튼을 먼저 기록하거나 영웅별 상태를 확인하세요.";
+          } else if (action === "objective-end") {
+            const timer = objectiveTimer();
+            message = Number.isInteger(timer.minRemaining)
+              ? `오브젝트 종료를 기록했습니다. 다음 목표는 약 ${timer.minRemaining}초 후입니다. 타이머를 기준으로 라인을 정리하고 합류를 준비하세요.`
+              : "오브젝트 종료를 기록했습니다. 다음 목표 시각이 고정되지 않은 전장입니다. 게임 내 신호를 확인하거나 고급 설정에서 보정하세요.";
+          } else {
+            const team = action.startsWith("ally-") ? "아군" : "적군";
+            const event = action.endsWith("-dead") ? "사망" : "부활";
+            const difference = oursDead - enemyDead;
+            const situation = `현재 아군 ${oursAlive}명, 적군 ${enemyAlive}명 생존 추정입니다.`;
+            if (difference > 0) {
+              message = `${team} ${event}을 반영했습니다. ${situation} 아군이 ${difference}명 열세이므로 단독 진입은 피하고, 안전하게 합류하거나 교전을 끊으세요.`;
+            } else if (difference < 0) {
+              message = `${team} ${event}을 반영했습니다. ${situation} 적군이 ${Math.abs(difference)}명 열세입니다. 추격보다 가까운 안전 목표를 먼저 확인하세요.`;
+            } else {
+              message = `${team} ${event}을 반영했습니다. ${situation} 확정된 수적 우위가 없으니 팀을 모으고 시야·오브젝트 상태를 확인하세요.`;
+            }
+          }
+          document.querySelector("#live-coaching-update").textContent = message;
+        }
+
         function updateMapBackground() {
           const image = mapBackgrounds[state.map];
           if (image) {
@@ -2573,14 +2636,46 @@
             document.querySelector("#objective").value = state.objective;
             renderObjectiveTimer();
             updateRecommendation();
+            updateLiveCoaching("objective-end");
             persist();
             return;
           }
-          const team = button.dataset.quickAction === "ally-dead" ? "ours"
-            : button.dataset.quickAction === "enemy-dead" ? "enemy" : null;
-          if (!team) return;
-          state.reportedDeaths[team] = Math.min(5, (state.reportedDeaths[team] ?? 0) + 1);
+          const actions = {
+            "ally-dead": { team: "ours", event: "dead" },
+            "ally-revived": { team: "ours", event: "revived" },
+            "enemy-dead": { team: "enemy", event: "dead" },
+            "enemy-revived": { team: "enemy", event: "revived" }
+          };
+          const action = actions[button.dataset.quickAction];
+          if (!action) return;
+          let changed = true;
+          if (action.event === "dead") {
+            const currentDeaths = teamDeadCount(action.team);
+            if (currentDeaths >= 5) {
+              changed = false;
+            } else {
+              const knownDead = state.battle[action.team].filter((member) => !member.alive).length;
+              state.reportedDeaths[action.team] = Math.min(
+                5,
+                Math.max(state.reportedDeaths[action.team] ?? 0, knownDead) + 1
+              );
+            }
+          } else {
+            const deadMember = state.battle[action.team].find((member) => !member.alive);
+            if (deadMember) {
+              deadMember.alive = true;
+              deadMember.respawn = null;
+              deadMember.respawnStartedAt = null;
+            }
+            if (state.reportedDeaths[action.team] !== null) {
+              state.reportedDeaths[action.team] = Math.max(0, state.reportedDeaths[action.team] - 1);
+            } else if (!deadMember) {
+              changed = false;
+            }
+          }
+          const coachingAction = `${action.team === "ours" ? "ally" : "enemy"}-${action.event === "revived" ? "revived" : action.event}`;
           updateRecommendation();
+          updateLiveCoaching(coachingAction, changed);
           persist();
         });
         document.querySelector("#quick-death-count-adjustments").addEventListener("click", (event) => {
