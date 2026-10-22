@@ -246,7 +246,9 @@ test("map clock alone provides lane, camp-planning, and objective-preparation re
   const far = coach.makeRecommendation();
   assert.match(far.action, /라인 경험치/);
   assert.match(far.reason, /150초/);
-  assert.match(far.warning, /캠프 등장 시각/);
+  assert.match(far.reason, /라인 경험치|라인을 정리/);
+  assert.doesNotMatch(far.reason, /90초 기준은 준비용 참고치/);
+  assert.match(far.warning, /캠프는 실제로 열려/);
 
   state.gameClockSeconds = 100;
   const preparation = coach.makeRecommendation();
@@ -257,11 +259,41 @@ test("map clock alone provides lane, camp-planning, and objective-preparation re
   const near = coach.makeRecommendation();
   assert.match(near.action, /팀과 합류 가능한 위치/);
   assert.match(near.reason, /20초/);
-  assert.match(near.warning, /게임 내 신호/);
+  assert.match(near.warning, /게임 내 알림/);
+});
+
+test("every map with a fixed first objective shows its opening countdown when a match starts", () => {
+  const firstObjectives = [
+    ["공포의 정원", "2분 30초 후"],
+    ["파멸의 탑", "3분 후"],
+    ["불지옥 신단", "3분 후"],
+    ["브락시스 항전", "1분 30초 후"],
+    ["볼스카야 공장", "3분 후"],
+    ["저주받은 골짜기", "3분 후"],
+    ["용의 둥지", "1분 30초 후"],
+    ["영원의 전쟁터", "3분 후"],
+    ["하늘 사원", "3분 후"],
+    ["핵탄두 격전지", "3분 후"],
+    ["알터랙 고개", "3분 후"],
+    ["하나무라 사원", "3분 후"],
+    ["죽음의 광산", "3분 후"]
+  ];
+
+  for (const [map, expectedCountdown] of firstObjectives) {
+    const { coach, querySelector } = loadCoachHarness();
+    const state = coach.defaultState();
+    state.map = map;
+    coach.setState(state);
+    querySelector("#start-match").listeners.click();
+
+    assert.equal(state.objective, "soon", `${map} starts with a scheduled objective`);
+    assert.equal(querySelector("#quick-objective-countdown").textContent, expectedCountdown, `${map} shows the opening time`);
+    assert.doesNotMatch(querySelector("#objective-countdown").textContent, /미확인/);
+  }
 });
 
 test("maps without a confirmed automatic objective schedule keep a safe baseline", () => {
-  const { coach } = loadCoachHarness();
+  const { coach, querySelector } = loadCoachHarness();
   const state = coach.defaultState();
   state.phase = "game";
   state.map = "거미 여왕의 무덤";
@@ -271,6 +303,12 @@ test("maps without a confirmed automatic objective schedule keep a safe baseline
   const recommendation = coach.makeRecommendation();
   assert.match(recommendation.action, /안전한 라인 경험치/);
   assert.doesNotMatch(recommendation.reason, /오브젝트까지 \d+초/);
+
+  state.map = "블랙하트 항만";
+  coach.setState(state);
+  querySelector("#start-match").listeners.click();
+  assert.equal(querySelector("#quick-objective-countdown").textContent, "미확인");
+  assert.match(querySelector("#objective-timer-status").textContent, /고정 등장 시각이 없거나 확인되지 않았습니다/);
 });
 
 test("map state buttons update the recommendation immediately", () => {
@@ -337,6 +375,14 @@ test("random draft creates unique heroes, persists, and protects an existing dra
 
 test("game screen keeps quick controls visible and groups detailed inputs under disclosures", () => {
   const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const pageTitle = "히오스 브론즈 탈출 전략:하지만 브론즈는 이걸 안 보겠지";
+  assert.ok(html.includes(`<title>${pageTitle}</title>`));
+  assert.ok(html.includes(`<h1>${pageTitle}</h1>`));
+  for (const selector of [".card", ".coach-quote", ".team-box", ".map-advice", ".objective-timer", ".map-strategy-panel", ".guide-grid article"]) {
+    const selectorStart = html.indexOf(`${selector} {`);
+    const ruleEnd = html.indexOf("}", selectorStart);
+    assert.ok(selectorStart >= 0 && html.slice(selectorStart, ruleEnd).includes("border-radius: 0"), `${selector} has square corners`);
+  }
   const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
   assert.equal(ids.length, new Set(ids).size, "HTML ids remain unique");
   const mapOptions = html.match(/<select id="map">([\s\S]*?)<\/select>/)?.[1].match(/<option(?![^>]*value="")[^>]*>/g);
@@ -384,9 +430,17 @@ test("game screen keeps quick controls visible and groups detailed inputs under 
   for (const action of ["objective-end", "ally-dead", "ally-revived", "enemy-dead", "enemy-revived"]) {
     assert.match(html, new RegExp(`data-quick-action="${action}"`));
   }
+  assert.deepEqual(
+    [...html.matchAll(/data-quick-action="([^"]+)"/g)].map((match) => match[1]),
+    ["ally-dead", "ally-revived", "objective-end", "enemy-dead", "enemy-revived"]
+  );
+  assert.match(html, /\.quick-choice-grid \{ display: grid; grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/);
+  assert.match(html, /\.quick-choice-grid \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
+  assert.match(html, /\.quick-choice\.objective-action \{ grid-column: 1 \/ -1; \}/);
   assert.equal((html.match(/data-quick-action=/g) || []).length, 5);
   assert.doesNotMatch(html, /data-quick-action="fight-(?:won|lost)"/);
-  assert.match(html, /<details id="detailed-inputs" class="full-controls">/);
+  assert.match(html, /<details id="detailed-inputs" class="full-controls" hidden>/);
+  assert.match(html, /id="detailed-inputs" class="full-controls" hidden>[\s\S]*상세 전황 입력/, "detailed inputs remain in the page for a future version but are hidden for now");
 });
 
 test("each selectable battleground uses its matching local background image", () => {
@@ -439,15 +493,32 @@ test("bilingual encouragement quote is shown above the page and rotates without 
     ["Your last death is not your next decision.", "방금 죽었다고 다음 판단까지 망칠 필요는 없다."],
     ["You don't need to carry every fight. Just make the next one better.", "모든 한타를 캐리할 필요는 없다. 다음 한타를 더 잘하면 된다."],
     ["The goal is not to play perfectly. It's to make fewer losing decisions.", "완벽한 플레이가 아니라, 패배로 이어지는 판단을 줄이는 게 목표다."],
-    ["You can lose the game without losing your composure.", "게임은 져도 평정심까지 잃을 필요는 없다."]
+    ["You can lose the game without losing your composure.", "게임은 져도 평정심까지 잃을 필요는 없다."],
+    ["One death is a mistake. Dwelling on it is a choice. Reset for the next fight.", "한 번 죽은 건 실수고, 계속 곱씹는 건 선택이에요. 다음 한타부터 다시 시작해요."],
+    ["If you died, you just got some time to read the map while you wait to respawn.", "죽었다면 부활을 기다리는 동안 지도를 읽을 시간이 생긴 겁니다."],
+    ["When you're angry, take one breath first. Then send one ping.", "화가 날 땐 숨 한 번, 그다음에 핑 한 번."],
+    ["No game is over until it's over. Check the next objective timer.", "끝난 판은 없어요. 다음 오브젝트 시간부터 확인해 보세요."],
+    ["A level gap is just a number. One well-timed team rotation can turn the game around.", "레벨 차이는 숫자일 뿐이고, 판을 뒤집는 건 제때 이뤄진 한 번의 합류예요."],
+    ["You don't have to win every fight. Even in a losing fight, you can still protect the objective.", "모든 한타를 이길 필요는 없어요. 질 한타에서도 오브젝트를 지키면 됩니다."],
+    ["Nobody wins a game by typing in chat. One ping or one move is faster.", "채팅으로 이기는 판은 없어요. 핑 하나, 이동 한 번이 더 빨라요."],
+    ["The moment you blame a teammate, your own play starts to slip too.", "팀원의 실수를 탓하는 순간, 내 플레이도 같이 흔들립니다."],
+    ["Look for what you missed instead of what the enemy did well, and your next game gets easier.", "상대가 잘한 점보다 내가 놓친 점을 찾으면 다음 판이 쉬워져요."],
+    ["Make this game's goal \"one fewer mistake than yesterday\" instead of just winning.", "이번 판의 목표는 이기는 것보다 \"어제보다 실수 하나 줄이기\"로 잡아 보세요."],
+    ["On a losing streak, it's okay to skip a game. Knowing when to rest is part of skill.", "연패 중이라면 한 판 쉬어도 괜찮아요. 쉬는 것도 실력의 일부예요."],
+    ["Wins and losses fade fast, but the games you laughed through with your team stay with you.", "승패는 금방 잊히지만, 같이 웃으며 뛴 판은 오래 남아요."]
   ];
   const english = querySelector("#coach-quote-en").textContent;
   const korean = querySelector("#coach-quote-ko").textContent;
   const initialIndex = quotes.findIndex(([en, ko]) => en === english && ko === korean);
 
   assert.ok(initialIndex >= 0, "initial English and Korean quote is a matching pair");
-  assert.equal((html.match(/\["(?:It ain't over|One good fight|As long as the Nexus|You can't control|Don't tilt|Win the game|A mistake|Play the next fight|Your last death|You don't need to carry|The goal is not|You can lose the game)/g) || []).length, 12);
+  assert.equal(quotes.length, 24, "all existing and newly requested quotes are available");
+  const normalizedHtml = html.replace(/\\"/g, '"');
+  assert.ok(quotes.slice(12).every(([en, ko]) => normalizedHtml.includes(en) && normalizedHtml.includes(ko)), "all requested English and Korean quotes appear");
   assert.ok(html.indexOf('class="coach-quote"') < html.indexOf("<header>"), "quote appears above the page header");
+  assert.match(html, /<button type="button" class="coach-quote"/, "quote card is a keyboard-accessible button");
+  const quoteCard = querySelector(".coach-quote");
+  assert.equal(typeof quoteCard.listeners.click, "function", "clicking the quote card rotates the quote");
   assert.match(html, /window\.setInterval\(rotateCoachQuote, 60000\)/, "each quote remains visible for one minute");
 
   runIntervals();
@@ -455,6 +526,12 @@ test("bilingual encouragement quote is shown above the page and rotates without 
   const nextKorean = querySelector("#coach-quote-ko").textContent;
   assert.ok(quotes.some(([en, ko]) => en === nextEnglish && ko === nextKorean), "next quote remains a matching pair");
   assert.notEqual(nextEnglish, english, "the same quote is not repeated consecutively");
+
+  quoteCard.listeners.click();
+  const clickedEnglish = querySelector("#coach-quote-en").textContent;
+  const clickedKorean = querySelector("#coach-quote-ko").textContent;
+  assert.ok(quotes.some(([en, ko]) => en === clickedEnglish && ko === clickedKorean), "clicked quote remains a matching pair");
+  assert.notEqual(clickedEnglish, nextEnglish, "clicking the card shows a different quote immediately");
 });
 
 test("new match resets match data while resume restores the saved match", () => {
@@ -536,6 +613,24 @@ test("quick team death counts update survival and fight recommendations without 
 
   state.battle.ours[0].alive = false;
   assert.equal(coach.teamSurvival("ours").confirmedAlive, 4, "reported and individual deaths are not double-counted");
+});
+
+test("complete team wipe triggers supportive coaching for either team", () => {
+  const { coach } = loadCoachHarness();
+  const state = coach.defaultState();
+
+  state.reportedDeaths = { ours: 0, enemy: 5 };
+  coach.setState(state);
+  const enemyWipe = coach.makeRecommendation();
+  assert.match(enemyWipe.action, /한타 대승/);
+  assert.match(enemyWipe.reason, /아군 5명 생존, 적군 전원 사망/);
+
+  state.reportedDeaths = { ours: 5, enemy: 0 };
+  coach.setState(state);
+  const allyWipe = coach.makeRecommendation();
+  assert.match(allyWipe.action, /다음 한타를 준비/);
+  assert.match(allyWipe.reason, /아군이 모두 쓰러졌지만/);
+  assert.match(allyWipe.executionCondition, /혼자 들어가지 마세요/);
 });
 
 test("repeated quick updates vary the primary action wording and timer refresh preserves it", () => {
@@ -680,6 +775,29 @@ test("Haunted Mines opens at three minutes and reopens two minutes after the gol
   assert.equal(state.lastObjectiveEndedAt, 420);
   assert.equal(querySelector("#quick-objective-countdown").textContent, "2분 후");
   assert.match(querySelector("#objective-countdown").textContent, /09:00/);
+});
+
+test("fixed objective respawn timers update after the prior event ends", () => {
+  const repeatRules = [
+    ["하나무라 사원", 180, "3분 후"],
+    ["영원의 전쟁터", 105, "1분 45초 후"],
+    ["불지옥 신단", 180, "3분 후"],
+    ["하늘 사원", 120, "2분 후"],
+    ["핵탄두 격전지", 185, "3분 5초 후"]
+  ];
+
+  for (const [map, seconds, expectedCountdown] of repeatRules) {
+    const { coach, querySelector } = loadCoachHarness();
+    const state = coach.defaultState();
+    state.map = map;
+    state.gameClockSeconds = 500;
+    coach.setState(state);
+    querySelector("#objective-end").listeners.click();
+
+    assert.equal(state.lastObjectiveEndedAt, 500, `${map} records the previous objective end`);
+    assert.equal(querySelector("#quick-objective-countdown").textContent, expectedCountdown, `${map} calculates its next objective time`);
+    assert.match(querySelector("#objective-countdown").textContent, new RegExp(`${Math.floor((500 + seconds) / 60)}:${String((500 + seconds) % 60).padStart(2, "0")}`));
+  }
 });
 
 test("game timeline follows the clock and stays capped after thirty minutes", () => {
