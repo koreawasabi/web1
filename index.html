@@ -1072,6 +1072,7 @@
         const heroDialog = document.querySelector("#hero-dialog");
         const heroSearch = document.querySelector("#hero-search");
         let lastCoachQuoteIndex = -1;
+        let coachingUpdateCount = 0;
         let activeSlot = null;
         let state = defaultState();
 
@@ -2324,7 +2325,33 @@
           return set("팀과 함께 안전한 라인을 정리하세요", "뚜렷한 우위가 확인되지 않아 고립을 피하고 다음 오브젝트에 대비하세요.");
         }
 
-        function updateRecommendation() {
+        function varyRecommendationAction(action) {
+          const variations = {
+            "팀과 함께 후퇴하세요": ["안전한 곳으로 물러나세요.", "아군이 모일 때까지 교전을 피하세요.", "더 깊이 들어가지 말고 재정비하세요."],
+            "후퇴하세요": ["교전을 피하세요.", "안전한 위치로 물러나세요.", "팀이 다시 모일 때까지 거리를 두세요."],
+            "피하세요": ["삼가세요.", "진입은 보류하세요.", "잠시 거리를 두세요."],
+            "확인하세요": ["살피세요.", "점검하세요.", "확인하는 편이 안전합니다."],
+            "준비하세요": ["미리 위치를 잡으세요.", "합류 준비를 시작하세요.", "팀이 모일 자리를 잡으세요."],
+            "모으세요": ["한데 모으세요.", "한곳에 모으세요.", "함께 모으세요."],
+            "합류하세요": ["팀과 함께 이동하세요.", "목표 쪽으로 이동을 시작하세요.", "팀에 합류해 자리를 잡으세요."],
+            "정리하세요": ["정돈하세요.", "정리해 주세요.", "정리해 두세요."],
+            "압박하세요": ["공략하세요.", "계속 밀어붙이세요.", "압박을 이어가세요."],
+            "확보하세요": ["먼저 챙기세요.", "점령하세요.", "가져오세요."],
+            "챙기세요": ["미리 확보하세요.", "미리 챙겨두세요.", "확보를 우선하세요."],
+            "찾으세요": ["살펴보세요.", "물색하세요.", "찾아보세요."],
+            "보세요": ["살펴보세요.", "확인해 보세요.", "점검하세요."],
+            "하세요": ["하십시오.", "해 주세요.", "하시는 편이 좋습니다."]
+          };
+          for (const [ending, phrases] of Object.entries(variations)) {
+            if (action.endsWith(ending)) {
+              const prefix = action.slice(0, -ending.length);
+              return `${prefix}${phrases[coachingUpdateCount % phrases.length]}`;
+            }
+          }
+          return action;
+        }
+
+        function updateRecommendation(freshInput = false) {
           const recommendation = makeRecommendation();
           const oursSurvival = teamSurvival("ours");
           const enemySurvival = teamSurvival("enemy");
@@ -2369,7 +2396,10 @@
           document.querySelector("#recommendation-category").textContent = recommendation.category;
           document.querySelector("#evidence-level").textContent = `근거 ${recommendation.evidence}`;
           document.querySelector("#diagnosis").textContent = recommendation.diagnosis;
-          document.querySelector("#recommendation").textContent = recommendation.action;
+          if (freshInput) coachingUpdateCount += 1;
+          document.querySelector("#recommendation").textContent = freshInput
+            ? varyRecommendationAction(recommendation.action)
+            : recommendation.action;
           const liveTip = liveSituationTip();
           document.querySelector("#reason").textContent = liveTip
             ? `${recommendation.reason} 실시간 전황 팁: ${liveTip}`
@@ -2636,7 +2666,7 @@
             endObjectiveEvent("unknown", state.objectiveEndKind);
             document.querySelector("#objective").value = state.objective;
             renderObjectiveTimer();
-            updateRecommendation();
+            updateRecommendation(true);
             persist();
             return;
           }
@@ -2668,7 +2698,7 @@
               state.reportedDeaths[action.team] = Math.max(0, state.reportedDeaths[action.team] - 1);
             }
           }
-          updateRecommendation();
+          updateRecommendation(true);
           persist();
         });
         document.querySelector("#quick-death-count-adjustments").addEventListener("click", (event) => {

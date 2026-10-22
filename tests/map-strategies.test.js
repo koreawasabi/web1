@@ -85,7 +85,7 @@ function loadCoachHarness() {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   assert.ok(inlineScript, "page has an inline application script");
-  const hook = `window.__coachTest = { defaultState, getState: () => state, setState: (next) => { state = next; }, makeRecommendation, normalizeState, renderObjectiveTimer, respawnSecondsRemaining, updateRespawnCountdowns, teamSurvival, mapBackgrounds, updateMapBackground };
+  const hook = `window.__coachTest = { defaultState, getState: () => state, setState: (next) => { state = next; }, makeRecommendation, updateRecommendation, normalizeState, renderObjectiveTimer, respawnSecondsRemaining, updateRespawnCountdowns, teamSurvival, mapBackgrounds, updateMapBackground };
         loadState();`;
   const instrumented = inlineScript.replace("        loadState();", hook);
   assert.notEqual(instrumented, inlineScript, "test hook insertion point exists");
@@ -536,6 +536,17 @@ test("quick team death counts update survival and fight recommendations without 
 
   state.battle.ours[0].alive = false;
   assert.equal(coach.teamSurvival("ours").confirmedAlive, 4, "reported and individual deaths are not double-counted");
+});
+
+test("repeated quick updates vary the primary action wording without changing its advice", () => {
+  const { coach, querySelector } = loadCoachHarness();
+  coach.updateRecommendation(true);
+  const firstAction = querySelector("#recommendation").textContent;
+  coach.updateRecommendation(true);
+  const repeatedAction = querySelector("#recommendation").textContent;
+  assert.notEqual(repeatedAction, firstAction);
+  assert.match(firstAction, /안전한 라인 경험치를 챙기며 전황을/);
+  assert.match(repeatedAction, /안전한 라인 경험치를 챙기며 전황을/);
 });
 
 test("respawn countdown revives a dead member at zero", () => {
